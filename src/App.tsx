@@ -6,7 +6,7 @@ import Reminders from './pages/Reminders'
 import Aiana from './pages/Aiana'
 
 const navItems = [
-  { path: '/', label: 'Vehicle', icon: Car },
+  { path: '/', label: 'Home', icon: Car },
   { path: '/maintenance', label: 'Maintenance', icon: Wrench },
   { path: '/reminders', label: 'Reminders', icon: Bell },
   { path: '/aiana', label: 'Aiana', icon: Sparkles },

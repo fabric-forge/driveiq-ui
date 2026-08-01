@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Sparkles, Send } from 'lucide-react'
 import { api } from '@/lib/api'
 import PageViewer from '@/components/PageViewer'
@@ -67,8 +68,8 @@ export default function Aiana() {
               }`}
             >
               {m.role === 'assistant' ? (
-                <div className="prose prose-sm prose-gray max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_strong]:font-semibold [&_table]:text-xs [&_th]:text-left [&_th]:pr-3 [&_td]:pr-3">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                <div className="prose prose-sm prose-gray max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_strong]:font-semibold [&_table]:text-xs [&_table]:border-collapse [&_th]:text-left [&_th]:pr-3 [&_th]:border-b [&_th]:border-gray-300 [&_th]:pb-1 [&_td]:pr-3 [&_td]:py-1">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
                 </div>
               ) : (
                 m.content

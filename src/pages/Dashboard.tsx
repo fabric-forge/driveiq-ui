@@ -19,7 +19,6 @@ export default function Dashboard() {
   }
 
   const { data: vehicle, isLoading, error } = useQuery({ queryKey: ['vehicle'], queryFn: api.vehicle.get })
-  const { data: summary } = useQuery({ queryKey: ['maintenance-summary'], queryFn: api.maintenance.summary })
   const { data: upcomingReminders } = useQuery({
     queryKey: ['upcoming-reminders', vehicle?.current_mileage],
     queryFn: () => api.reminders.upcoming(vehicle?.current_mileage ?? undefined),
@@ -39,7 +38,7 @@ export default function Dashboard() {
     mutationFn: (id: number) => api.reminders.complete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['upcoming-reminders'] })
-      queryClient.invalidateQueries({ queryKey: ['maintenance-summary'] })
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] })
     },
   })
 
@@ -194,37 +193,6 @@ export default function Dashboard() {
                 </button>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Maintenance summary */}
-      {summary && summary.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-4">Service History Summary</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-500 border-b">
-                  <th className="pb-3 font-medium">Service Type</th>
-                  <th className="pb-3 font-medium">Count</th>
-                  <th className="pb-3 font-medium">Total Cost</th>
-                  <th className="pb-3 font-medium">Last Performed</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {summary.map((s) => (
-                  <tr key={s.type} className="border-b last:border-b-0">
-                    <td className="py-3 capitalize font-medium text-gray-900">{s.type.replace(/_/g, ' ')}</td>
-                    <td className="py-3 text-gray-600">{s.count}</td>
-                    <td className="py-3 text-gray-600">${s.total_cost.toFixed(2)}</td>
-                    <td className="py-3 text-gray-600">
-                      {s.last_performed && formatDate(s.last_performed)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
