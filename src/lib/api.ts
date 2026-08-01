@@ -6,7 +6,7 @@
 // anything but GET/HEAD. Mirrors social-ui/src/lib/api.ts's apiFetchRaw
 // pattern for the same reason.
 
-import type { Vehicle, MaintenanceRecord, Reminder } from '@/types';
+import type { Vehicle, MaintenanceRecord, Reminder, AskResponse } from '@/types';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -73,5 +73,8 @@ export const api = {
     complete: (id: number, body?: { mileage?: number; cost?: number; service_provider?: string; notes?: string }) =>
       post<Reminder>(`/api/reminders/${id}/complete`, body),
     delete: (id: number) => del<{ message: string }>(`/api/reminders/${id}`),
+  },
+  aiana: {
+    ask: (query: string) => post<AskResponse>('/api/search/ask', { query }),
   },
 };

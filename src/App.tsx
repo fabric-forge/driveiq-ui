@@ -1,13 +1,15 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { Car, Wrench, Bell } from 'lucide-react'
+import { Car, Wrench, Bell, Sparkles } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import Maintenance from './pages/Maintenance'
 import Reminders from './pages/Reminders'
+import Aiana from './pages/Aiana'
 
 const navItems = [
   { path: '/', label: 'Vehicle', icon: Car },
   { path: '/maintenance', label: 'Maintenance', icon: Wrench },
   { path: '/reminders', label: 'Reminders', icon: Bell },
+  { path: '/aiana', label: 'Aiana', icon: Sparkles },
 ]
 
 export default function App() {
@@ -46,6 +48,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/maintenance" element={<Maintenance />} />
           <Route path="/reminders" element={<Reminders />} />
+          <Route path="/aiana" element={<Aiana />} />
         </Routes>
       </main>
     </div>

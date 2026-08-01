@@ -41,6 +41,17 @@ export interface MaintenanceRecord {
   updated_at: string | null;
 }
 
+export interface AskSource {
+  document: string;
+  page: number | null;
+  relevance: number;
+}
+
+export interface AskResponse {
+  answer: string;
+  sources: AskSource[];
+}
+
 export interface Reminder {
   id: number;
   vehicle_id: number;
