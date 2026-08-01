@@ -25,7 +25,6 @@ export default function Dashboard() {
     mutationFn: (mileage: number) => api.vehicle.updateMileage(mileage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicle'] })
-      queryClient.invalidateQueries({ queryKey: ['upcoming-reminders'] })
       setMileageInput('')
     },
   })
@@ -44,7 +43,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Vehicle hero */}
+      {/* Vehicle hero: title + mileage update */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-toyota-red blur-3xl" />
@@ -52,7 +51,7 @@ export default function Dashboard() {
         </div>
 
         <div className="relative p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div>
               <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-toyota-red rounded-full mb-2">
                 {vehicle.year}
@@ -97,7 +96,53 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+        </div>
+      </div>
 
+      {/* Reminders — directly below the mileage update control */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Bell className="h-5 w-5 text-toyota-red" />
+          Reminders
+        </h2>
+        {reminders && reminders.length > 0 ? (
+          <div className="space-y-3">
+            {reminders.map((reminder) => (
+              <div
+                key={reminder.id}
+                className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">{reminder.title}</p>
+                  <p className="text-sm text-gray-600">
+                    {reminder.due_date && `Due: ${formatDate(reminder.due_date)}`}
+                    {reminder.due_date && reminder.due_mileage && ' • '}
+                    {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} miles`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => completeReminder.mutate(reminder.id)}
+                  disabled={completeReminder.isPending}
+                  className="flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+                >
+                  <Check className="h-4 w-4" />
+                  Mark done
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-toyota-gray text-center py-6">No active reminders.</p>
+        )}
+      </div>
+
+      {/* Vehicle stats */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-toyota-red blur-3xl" />
+          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-blue-500 blur-3xl" />
+        </div>
+        <div className="relative">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
               onClick={() => toggleBlur('odometer')}
@@ -156,43 +201,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Reminders */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-toyota-red" />
-          Reminders
-        </h2>
-        {reminders && reminders.length > 0 ? (
-          <div className="space-y-3">
-            {reminders.map((reminder) => (
-              <div
-                key={reminder.id}
-                className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{reminder.title}</p>
-                  <p className="text-sm text-gray-600">
-                    {reminder.due_date && `Due: ${formatDate(reminder.due_date)}`}
-                    {reminder.due_date && reminder.due_mileage && ' • '}
-                    {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} miles`}
-                  </p>
-                </div>
-                <button
-                  onClick={() => completeReminder.mutate(reminder.id)}
-                  disabled={completeReminder.isPending}
-                  className="flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
-                >
-                  <Check className="h-4 w-4" />
-                  Mark done
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-toyota-gray text-center py-6">No active reminders.</p>
-        )}
       </div>
     </div>
   )
