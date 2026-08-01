@@ -110,10 +110,10 @@ export default function Dashboard() {
             {reminders.map((reminder) => (
               <div
                 key={reminder.id}
-                className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                className="flex flex-wrap items-center justify-between gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
               >
-                <div>
-                  <p className="font-medium text-gray-900">{reminder.title}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-gray-900 break-words">{reminder.title}</p>
                   <p className="text-sm text-gray-600">
                     {reminder.due_date && `Due: ${formatDate(reminder.due_date)}`}
                     {reminder.due_date && reminder.due_mileage && ' • '}
@@ -123,7 +123,7 @@ export default function Dashboard() {
                 <button
                   onClick={() => completeReminder.mutate(reminder.id)}
                   disabled={completeReminder.isPending}
-                  className="flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+                  className="shrink-0 flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
                 >
                   <Check className="h-4 w-4" />
                   Mark done
