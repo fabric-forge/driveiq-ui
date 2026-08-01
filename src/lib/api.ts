@@ -13,6 +13,7 @@ const BASE = import.meta.env.VITE_API_URL ?? '';
 export async function apiFetchRaw(path: string, init?: RequestInit): Promise<Response> {
   const hasBody = init?.body !== undefined && init.body !== null;
   const res = await fetch(`${BASE}${path}`, {
+    credentials: 'include',
     headers: { ...(hasBody ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
     ...init,
   });
