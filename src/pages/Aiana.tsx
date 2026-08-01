@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
-import { Sparkles, Send, FileText } from 'lucide-react'
+import { Sparkles, Send } from 'lucide-react'
 import { api } from '@/lib/api'
+import PageViewer from '@/components/PageViewer'
 import type { AskSource } from '@/types'
 
 interface Message {
@@ -72,20 +73,7 @@ export default function Aiana() {
               ) : (
                 m.content
               )}
-              {m.sources && m.sources.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-300/50 flex flex-wrap gap-2">
-                  {m.sources.map((s, si) => (
-                    <span
-                      key={si}
-                      className="inline-flex items-center gap-1 text-xs bg-white/70 text-gray-700 px-2 py-1 rounded-full"
-                    >
-                      <FileText className="h-3 w-3" />
-                      {s.document}
-                      {s.page ? `, p.${s.page}` : ''}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {m.sources && m.sources.length > 0 && <PageViewer sources={m.sources} />}
             </div>
           </div>
         ))}

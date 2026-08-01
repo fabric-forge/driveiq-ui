@@ -45,6 +45,8 @@ export interface AskSource {
   document: string;
   page: number | null;
   relevance: number;
+  thumbnail_url?: string;
+  fullsize_url?: string;
 }
 
 export interface AskResponse {
