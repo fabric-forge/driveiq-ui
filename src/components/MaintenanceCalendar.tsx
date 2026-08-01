@@ -100,8 +100,8 @@ export default function MaintenanceCalendar({
   const selectedEvents = selectedDate ? eventsByDate.get(selectedDate) ?? [] : []
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white border border-gray-200 rounded-lg p-3 max-w-xs mx-auto lg:mx-0">
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => setViewedMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
           className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"

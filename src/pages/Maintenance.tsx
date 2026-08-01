@@ -92,70 +92,75 @@ export default function Maintenance() {
         </div>
       </div>
 
-      {/* Category filter */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        <button
-          onClick={() => setActiveCategory('all')}
-          className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-            activeCategory === 'all' ? 'bg-toyota-red text-white border-toyota-red' : 'bg-white text-gray-700 border-gray-300'
-          }`}
-        >
-          All
-        </button>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-              activeCategory === cat ? 'bg-toyota-red text-white border-toyota-red' : 'bg-white text-gray-700 border-gray-300'
-            }`}
-          >
-            {CATEGORY_META[cat].label}
-          </button>
-        ))}
-      </div>
-
-      {/* Upcoming */}
-      {upcoming.length > 0 && (
-        <section>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Upcoming Service</h2>
-          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-2 overflow-x-auto sm:overflow-visible -mx-1 px-1">
-            {upcoming.slice(0, 6).map((item) => (
-              <UpcomingCard key={item.type} item={item} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Main content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Category filter */}
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            <button
+              onClick={() => setActiveCategory('all')}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                activeCategory === 'all' ? 'bg-toyota-red text-white border-toyota-red' : 'bg-white text-gray-700 border-gray-300'
+              }`}
+            >
+              All
+            </button>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  activeCategory === cat ? 'bg-toyota-red text-white border-toyota-red' : 'bg-white text-gray-700 border-gray-300'
+                }`}
+              >
+                {CATEGORY_META[cat].label}
+              </button>
             ))}
           </div>
-        </section>
-      )}
 
-      {/* Summary */}
-      {summary.length > 0 && (
-        <section>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Summary</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {summary.map(([type, s]) => {
-              const meta = CATEGORY_META[categorize(type)]
-              const Icon = meta.icon
-              return (
-                <div key={type} className="bg-white border border-gray-200 rounded-lg p-3">
-                  <div className={`inline-flex p-1.5 rounded-md mb-1.5 ${meta.color}`}>
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900 capitalize truncate">{type.replace(/_/g, ' ')}</p>
-                  <p className="text-xs text-gray-500">
-                    {s.count}x · {formatDate(s.lastDate)}
-                  </p>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
+          {/* Upcoming */}
+          {upcoming.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Upcoming Service</h2>
+              <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-2 overflow-x-auto sm:overflow-visible -mx-1 px-1">
+                {upcoming.slice(0, 6).map((item) => (
+                  <UpcomingCard key={item.type} item={item} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      {/* Calendar: past, current, and future (estimated) events */}
-      <section>
-        <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Calendar</h2>
-        <MaintenanceCalendar records={filtered} upcoming={upcoming} />
-      </section>
+          {/* Summary */}
+          {summary.length > 0 && (
+            <section>
+              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Summary</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {summary.map(([type, s]) => {
+                  const meta = CATEGORY_META[categorize(type)]
+                  const Icon = meta.icon
+                  return (
+                    <div key={type} className="bg-white border border-gray-200 rounded-lg p-3">
+                      <div className={`inline-flex p-1.5 rounded-md mb-1.5 ${meta.color}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900 capitalize truncate">{type.replace(/_/g, ' ')}</p>
+                      <p className="text-xs text-gray-500">
+                        {s.count}x · {formatDate(s.lastDate)}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* Calendar: past, current, and future (estimated) events */}
+        <div className="lg:col-span-1">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Calendar</h2>
+          <MaintenanceCalendar records={filtered} upcoming={upcoming} />
+        </div>
+      </div>
     </div>
   )
 }
