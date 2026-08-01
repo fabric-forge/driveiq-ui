@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import ReactMarkdown from 'react-markdown'
 import { Sparkles, Send, FileText } from 'lucide-react'
 import { api } from '@/lib/api'
 import type { AskSource } from '@/types'
@@ -60,11 +61,17 @@ export default function Aiana() {
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] rounded-lg px-4 py-3 whitespace-pre-wrap text-sm ${
-                m.role === 'user' ? 'bg-toyota-red text-white' : 'bg-gray-100 text-gray-900'
+              className={`max-w-[85%] rounded-lg px-4 py-3 text-sm ${
+                m.role === 'user' ? 'bg-toyota-red text-white whitespace-pre-wrap' : 'bg-gray-100 text-gray-900'
               }`}
             >
-              {m.content}
+              {m.role === 'assistant' ? (
+                <div className="prose prose-sm prose-gray max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-2 [&_ul]:my-2 [&_ol]:my-2 [&_li]:my-0.5 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_strong]:font-semibold [&_table]:text-xs [&_th]:text-left [&_th]:pr-3 [&_td]:pr-3">
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                </div>
+              ) : (
+                m.content
+              )}
               {m.sources && m.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-300/50 flex flex-wrap gap-2">
                   {m.sources.map((s, si) => (
