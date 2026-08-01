@@ -37,6 +37,16 @@ export interface UpcomingItem extends ScheduleItem {
   dueMileage: number
   milesRemaining: number
   status: 'overdue' | 'due_soon' | 'ok'
+  dueDate: string | null
+}
+
+/** Estimates a calendar due date from the last-performed date + interval. Only
+ * meaningful when there's a real last-performed record to anchor it to. */
+function estimateDueDate(lastPerformedDate: string | null, intervalMonths: number): string | null {
+  if (!lastPerformedDate) return null
+  const [y, m, d] = lastPerformedDate.split('-').map(Number)
+  const due = new Date(y, m - 1 + intervalMonths, d)
+  return `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`
 }
 
 /** Matches a maintenance_type against a schedule type via substring, same
@@ -66,6 +76,7 @@ export function computeUpcoming(
       dueMileage,
       milesRemaining,
       status,
+      dueDate: estimateDueDate(last?.date_performed ?? null, item.intervalMonths),
     }
   }).sort((a, b) => a.milesRemaining - b.milesRemaining)
 }
