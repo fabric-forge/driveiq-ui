@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Gauge, FileText, Settings2, Wrench, Bell, X } from 'lucide-react'
 import { api } from '@/lib/api'
+import { formatDate } from '@/lib/date'
 
 export default function Dashboard() {
   const queryClient = useQueryClient()
@@ -96,7 +97,7 @@ export default function Dashboard() {
               </form>
               {vehicle.last_mileage_update && (
                 <p className="text-xs text-gray-500">
-                  Last updated: {new Date(vehicle.last_mileage_update).toLocaleDateString()}
+                  Last updated: {formatDate(vehicle.last_mileage_update)}
                 </p>
               )}
             </div>
@@ -178,7 +179,7 @@ export default function Dashboard() {
                 <div>
                   <p className="font-medium text-gray-900">{reminder.title}</p>
                   <p className="text-sm text-gray-600">
-                    {reminder.due_date && `Due: ${new Date(reminder.due_date).toLocaleDateString()}`}
+                    {reminder.due_date && `Due: ${formatDate(reminder.due_date)}`}
                     {reminder.due_date && reminder.due_mileage && ' • '}
                     {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} miles`}
                   </p>
@@ -218,7 +219,7 @@ export default function Dashboard() {
                     <td className="py-3 text-gray-600">{s.count}</td>
                     <td className="py-3 text-gray-600">${s.total_cost.toFixed(2)}</td>
                     <td className="py-3 text-gray-600">
-                      {s.last_performed && new Date(s.last_performed).toLocaleDateString()}
+                      {s.last_performed && formatDate(s.last_performed)}
                     </td>
                   </tr>
                 ))}

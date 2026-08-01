@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Car, Wrench, ChevronDown, ChevronUp } from 'lucide-react'
 import { api } from '@/lib/api'
+import { formatDate } from '@/lib/date'
 import type { MaintenanceRecord } from '@/types'
 
 function RecordCard({ record }: { record: MaintenanceRecord }) {
@@ -19,7 +20,7 @@ function RecordCard({ record }: { record: MaintenanceRecord }) {
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 capitalize">{record.maintenance_type.replace(/_/g, ' ')}</h3>
               <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                <span>{new Date(record.date_performed).toLocaleDateString()}</span>
+                <span>{formatDate(record.date_performed)}</span>
                 <span className="flex items-center gap-1">
                   <Car className="h-3 w-3" />
                   {record.mileage.toLocaleString()} mi
