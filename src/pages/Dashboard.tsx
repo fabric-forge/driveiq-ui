@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Gauge, FileText, Settings2, Wrench, Bell, X } from 'lucide-react'
+import { Gauge, FileText, Settings2, Wrench, Bell, Check } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate } from '@/lib/date'
 
@@ -19,11 +19,7 @@ export default function Dashboard() {
   }
 
   const { data: vehicle, isLoading, error } = useQuery({ queryKey: ['vehicle'], queryFn: api.vehicle.get })
-  const { data: upcomingReminders } = useQuery({
-    queryKey: ['upcoming-reminders', vehicle?.current_mileage],
-    queryFn: () => api.reminders.upcoming(vehicle?.current_mileage ?? undefined),
-    enabled: !!vehicle,
-  })
+  const { data: reminders } = useQuery({ queryKey: ['reminders'], queryFn: () => api.reminders.list() })
 
   const updateMileage = useMutation({
     mutationFn: (mileage: number) => api.vehicle.updateMileage(mileage),
@@ -37,7 +33,7 @@ export default function Dashboard() {
   const completeReminder = useMutation({
     mutationFn: (id: number) => api.reminders.complete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['upcoming-reminders'] })
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
     },
   })
@@ -162,15 +158,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Upcoming reminders */}
-      {upcomingReminders && upcomingReminders.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-toyota-red" />
-            Upcoming Service Reminders
-          </h2>
+      {/* Reminders */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Bell className="h-5 w-5 text-toyota-red" />
+          Reminders
+        </h2>
+        {reminders && reminders.length > 0 ? (
           <div className="space-y-3">
-            {upcomingReminders.map((reminder) => (
+            {reminders.map((reminder) => (
               <div
                 key={reminder.id}
                 className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
@@ -186,16 +182,18 @@ export default function Dashboard() {
                 <button
                   onClick={() => completeReminder.mutate(reminder.id)}
                   disabled={completeReminder.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
-                  title="Dismiss"
+                  className="flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
                 >
-                  <X className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
+                  Mark done
                 </button>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <p className="text-toyota-gray text-center py-6">No active reminders.</p>
+        )}
+      </div>
     </div>
   )
 }
