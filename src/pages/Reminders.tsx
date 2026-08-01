@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check } from 'lucide-react'
 import { api } from '@/lib/api'
+import { formatDate } from '@/lib/date'
 
 export default function Reminders() {
   const queryClient = useQueryClient()
@@ -32,7 +33,7 @@ export default function Reminders() {
               <div>
                 <p className="font-medium text-gray-900">{reminder.title}</p>
                 <p className="text-sm text-gray-500">
-                  {reminder.due_date && `Due ${new Date(reminder.due_date).toLocaleDateString()}`}
+                  {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
                   {reminder.due_date && reminder.due_mileage && ' · '}
                   {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
                 </p>
