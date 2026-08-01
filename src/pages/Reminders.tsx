@@ -12,7 +12,6 @@ export default function Reminders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
-      queryClient.invalidateQueries({ queryKey: ['maintenance-summary'] })
     },
   })
 
