@@ -39,8 +39,9 @@ function UpcomingCard({ item }: { item: UpcomingItem }) {
         {statusLabel}
       </span>
       <span className="text-xs text-gray-500">
-        Due at {item.dueMileage.toLocaleString()} mi
-        {item.lastPerformedDate && ` · last ${formatDate(item.lastPerformedDate)}`}
+        {item.lastPerformedDate
+          ? `Due at ${item.dueMileage.toLocaleString()} mi · last ${formatDate(item.lastPerformedDate)}`
+          : 'No record on file'}
       </span>
     </div>
   )
