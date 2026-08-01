@@ -24,8 +24,11 @@ jobs:
       - run: npm ci --legacy-peer-deps
 
       - name: Build
-        env:
-          VITE_API_URL: https://driveiq-api.ry-ops.dev
+        # No VITE_API_URL — API calls go through the same origin, at /api/*,
+        # via a Worker route bound to driveiq.ry-ops.dev/api/*. Cloudflare
+        # Access can't selectively bypass a CORS preflight (no HTTP-method
+        # rule in its policy builder), so cross-origin credentialed
+        # POST/PATCH calls to driveiq-api.ry-ops.dev would 403 on OPTIONS.
         run: npm run build
 
       - name: Deploy to Cloudflare Pages

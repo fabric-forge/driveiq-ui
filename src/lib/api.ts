@@ -1,10 +1,12 @@
 // DriveIQ UI — API client
-// Every request goes through the absolute API host, never a relative path.
-// In prod the UI is served from Cloudflare Pages (driveiq.ry-ops.dev) but the
-// API lives on the Worker (driveiq-api.ry-ops.dev); a relative `/api/...`
-// fetch would hit Pages, which only serves static assets and 405s on
-// anything but GET/HEAD. Mirrors social-ui/src/lib/api.ts's apiFetchRaw
-// pattern for the same reason.
+// Requests go to a relative /api/... path, same-origin with the frontend.
+// A Worker route binds driveiq-api's Worker to driveiq.ry-ops.dev/api/* in
+// addition to its standalone host, so the browser never makes a cross-origin
+// call — Cloudflare Access can't selectively bypass a CORS preflight (no
+// HTTP-method rule in its policy builder), so a credentialed cross-origin
+// POST/PATCH from driveiq.ry-ops.dev to driveiq-api.ry-ops.dev always 403s
+// on the OPTIONS preflight. VITE_API_URL can still override this (e.g. local
+// dev against a standalone Worker) — see .env.example.
 
 import type { Vehicle, MaintenanceRecord, Reminder, AskResponse } from '@/types';
 
