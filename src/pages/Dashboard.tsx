@@ -16,9 +16,9 @@ const URGENCY_STYLE: Record<UpcomingItem['status'], { border: string; badge: str
   ok: { border: 'border-emerald-500', badge: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 }
 
-function CardTag({ label, className }: { label: string; className: string }) {
+function Tag({ label, className }: { label: string; className: string }) {
   return (
-    <span className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${className}`}>
+    <span className={`shrink-0 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${className}`}>
       {label}
     </span>
   )
@@ -36,16 +36,18 @@ function ReminderCard({
   isPending: boolean
 }) {
   return (
-    <div className="relative bg-white rounded-xl shadow-md border-l-4 border-toyota-red overflow-hidden">
-      <CardTag label="Reminder" className="bg-toyota-red text-white" />
+    <div className="bg-white rounded-xl shadow-md border-l-4 border-toyota-red overflow-hidden">
       <div className="p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-red-50 text-toyota-red shrink-0">
             <CalendarClock className="h-5 w-5" />
           </div>
-          <div className="min-w-0 flex-1 pr-14">
-            <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
-            <p className="text-sm text-gray-500">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+              <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
+              <Tag label="Reminder" className="bg-toyota-red text-white" />
+            </div>
+            <p className="text-sm text-gray-500 mt-0.5">
               {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
               {reminder.due_date && reminder.due_mileage && ' • '}
               {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
@@ -99,16 +101,18 @@ function ForecastCard({
   }[item.status]
 
   return (
-    <div className={`relative bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
-      <CardTag label="Forecast" className="bg-gray-900 text-white" />
+    <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
       <button onClick={onToggle} className="w-full p-4 text-left hover:bg-gray-50 transition-colors">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 pr-14">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
             <div className={`p-2 rounded-lg shrink-0 ${meta.color}`}>
               <Icon className="h-5 w-5" />
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{item.name}</h3>
+            <div className="min-w-0">
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                <h3 className="font-semibold text-gray-900 break-words">{item.name}</h3>
+                <Tag label="Forecast" className="bg-gray-900 text-white" />
+              </div>
               <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 border ${badge}`}>
                 {statusLabel}
               </div>
