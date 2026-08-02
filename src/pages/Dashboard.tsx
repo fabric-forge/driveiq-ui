@@ -9,17 +9,14 @@ import { api } from '@/lib/api'
 import { formatDate, daysSince, todayISO } from '@/lib/date'
 import { CATEGORY_META } from '@/lib/maintenanceCategories'
 import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
-import { forecastAianaQuery, reminderAianaQuery } from '@/lib/aianaQueries'
+import { forecastAianaQuery, forecastSpecPreviewQuery, reminderAianaQuery, stripMarkdown } from '@/lib/aianaQueries'
 import type { Reminder, MaintenanceRecord } from '@/types'
 
-function AskAianaLink({ query, className }: { query: string; className?: string }) {
+function AskAianaLink({ query }: { query: string }) {
   return (
     <Link
       to={`/aiana?q=${encodeURIComponent(query)}`}
-      className={
-        className ??
-        'flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
-      }
+      className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
       title="Ask Aiana about this"
     >
       <Sparkles className="h-4 w-4" />
@@ -44,11 +41,15 @@ function Tag({ label, className }: { label: string; className: string }) {
 
 function ReminderCard({
   reminder,
+  isExpanded,
+  onToggle,
   onLogService,
   onMarkDone,
   isPending,
 }: {
   reminder: Reminder
+  isExpanded: boolean
+  onToggle: () => void
   onLogService: () => void
   onMarkDone: () => void
   isPending: boolean
@@ -57,57 +58,66 @@ function ReminderCard({
 
   return (
     <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden ${isAppointment ? 'border-blue-500' : 'border-toyota-red'}`}>
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className={`p-2 rounded-lg shrink-0 ${isAppointment ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-toyota-red'}`}>
-            <CalendarClock className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-              <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
-              {isAppointment ? (
-                <Tag label="Appointment" className="bg-blue-600 text-white" />
-              ) : (
-                <Tag label="Reminder" className="bg-toyota-red text-white" />
-              )}
+      <button onClick={onToggle} className="w-full p-4 text-left hover:bg-gray-50 transition-colors">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className={`p-2 rounded-lg shrink-0 ${isAppointment ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-toyota-red'}`}>
+              <CalendarClock className="h-5 w-5" />
             </div>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
-              {reminder.due_date && reminder.due_mileage && ' • '}
-              {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
-            </p>
-            {reminder.description && <p className="text-sm text-gray-500 mt-1">{reminder.description}</p>}
+            <div className="min-w-0">
+              <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+                <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
+                {isAppointment ? (
+                  <Tag label="Appointment" className="bg-blue-600 text-white" />
+                ) : (
+                  <Tag label="Reminder" className="bg-toyota-red text-white" />
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
+                {reminder.due_date && reminder.due_mileage && ' • '}
+                {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
+              </p>
+            </div>
           </div>
+          {isExpanded ? (
+            <ChevronUp className="h-5 w-5 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronDown className="h-5 w-5 text-gray-400 shrink-0" />
+          )}
         </div>
-        <div className="flex items-center gap-2 mt-4">
-          <button
-            onClick={onLogService}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            title="Log service with cost & provider"
-          >
-            <Plus className="h-4 w-4" />
-            Log service
-          </button>
-          <button
-            onClick={onMarkDone}
-            disabled={isPending}
-            className="flex-1 flex items-center justify-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
-          >
-            <Check className="h-4 w-4" />
-            Mark done
-          </button>
-        </div>
-        {/* Nothing to look up in the manual for a scheduled appointment — only
-            for a part or fluid, so schedule-based reminders skip this. */}
-        {!isAppointment && (
-          <div className="mt-2">
-            <AskAianaLink
-              query={reminderAianaQuery(reminder.title)}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            />
+      </button>
+
+      {isExpanded && (
+        <div className="px-4 pb-4 pt-4 border-t bg-gray-50">
+          {reminder.description && <p className="text-sm text-gray-600 mb-3">{reminder.description}</p>}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onLogService}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              title="Log service with cost & provider"
+            >
+              <Plus className="h-4 w-4" />
+              Log service
+            </button>
+            <button
+              onClick={onMarkDone}
+              disabled={isPending}
+              className="flex-1 flex items-center justify-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+            >
+              <Check className="h-4 w-4" />
+              Mark done
+            </button>
           </div>
-        )}
-      </div>
+          {/* Nothing to look up in the manual for a scheduled appointment —
+              only for a part or fluid, so schedule-based reminders skip this. */}
+          {!isAppointment && (
+            <div className="mt-2">
+              <AskAianaLink query={reminderAianaQuery(reminder.title)} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -144,14 +154,18 @@ function ForecastCard({
 
   // Fetched once, on first expand, and cached indefinitely — an LLM+RAG call
   // per card isn't free, and the answer for a given service type doesn't
-  // change between page loads.
+  // change between page loads. Uses a plain-text-requesting variant of the
+  // question — the deep-link (AskAianaLink below) uses the natural one, since
+  // that opens the full chat page where markdown renders properly.
   const spec = useQuery({
     queryKey: ['aiana-spec', item.type],
-    queryFn: () => api.aiana.ask(aianaQuery),
+    queryFn: () => api.aiana.ask(forecastSpecPreviewQuery(item.type, item.name)),
     enabled: isExpanded,
     staleTime: Infinity,
     retry: false,
   })
+  const specText = spec.data ? stripMarkdown(spec.data.answer) : null
+  const specPreview = specText && specText.length > 220 ? `${specText.slice(0, 220).trim()}…` : specText
 
   return (
     <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
@@ -242,11 +256,7 @@ function ForecastCard({
             </p>
             {spec.isLoading && <p className="text-sm text-gray-400">Asking Aiana…</p>}
             {spec.isError && <p className="text-sm text-gray-400">Couldn't reach Aiana just now.</p>}
-            {spec.data && (
-              <p className="text-sm text-gray-700">
-                {spec.data.answer.length > 220 ? `${spec.data.answer.slice(0, 220).trim()}…` : spec.data.answer}
-              </p>
-            )}
+            {specPreview && <p className="text-sm text-gray-700">{specPreview}</p>}
             <div className="mt-3">
               <AskAianaLink query={aianaQuery} />
             </div>
@@ -262,6 +272,7 @@ export default function Dashboard() {
   const [mileageInput, setMileageInput] = useState('')
   const [blurredCards, setBlurredCards] = useState<Set<string>>(new Set())
   const [expandedForecast, setExpandedForecast] = useState<Set<string>>(new Set())
+  const [expandedReminders, setExpandedReminders] = useState<Set<number>>(new Set())
   const [logTarget, setLogTarget] = useState<{ kind: 'reminder'; reminder: Reminder } | { kind: 'forecast'; item: UpcomingItem } | null>(null)
   const [logCost, setLogCost] = useState('')
   const [logProvider, setLogProvider] = useState('')
@@ -288,6 +299,15 @@ export default function Dashboard() {
       const next = new Set(prev)
       if (next.has(type)) next.delete(type)
       else next.add(type)
+      return next
+    })
+  }
+
+  const toggleReminder = (id: number) => {
+    setExpandedReminders((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -529,14 +549,19 @@ export default function Dashboard() {
           )}
         </div>
 
+        {/* items-start: without it, CSS Grid stretches every card in a row to
+            match its tallest sibling, so a collapsed card would still look
+            expanded-height next to an expanded one in the same row. */}
         {totalActionable === 0 ? (
           <p className="text-toyota-gray text-center py-6 bg-white rounded-xl shadow-md">Nothing due right now.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
             {reminders?.map((reminder) => (
               <ReminderCard
                 key={`reminder-${reminder.id}`}
                 reminder={reminder}
+                isExpanded={expandedReminders.has(reminder.id)}
+                onToggle={() => toggleReminder(reminder.id)}
                 onLogService={() => setLogTarget({ kind: 'reminder', reminder })}
                 onMarkDone={() => completeReminder.mutate({ id: reminder.id })}
                 isPending={completeReminder.isPending}
