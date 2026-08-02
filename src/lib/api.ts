@@ -8,7 +8,7 @@
 // on the OPTIONS preflight. VITE_API_URL can still override this (e.g. local
 // dev against a standalone Worker) — see .env.example.
 
-import type { Vehicle, MaintenanceRecord, Reminder, AskResponse, CarfaxReport } from '@/types';
+import type { Vehicle, MaintenanceRecord, Reminder, AskResponse, CarfaxReport, VehicleSpec } from '@/types';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -90,5 +90,8 @@ export const api = {
           if (err?.status === 404) return null;
           throw err;
         }),
+  },
+  vehicleSpecs: {
+    list: () => get<VehicleSpec[]>('/api/vehicle-specs'),
   },
 };

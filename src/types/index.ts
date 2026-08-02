@@ -49,6 +49,23 @@ export interface CarfaxReport {
   owner_count: number;
 }
 
+// Curated OEM specs (tire size, oil capacity, spark plugs, cabin filter,
+// drive belt) — a one-time researched-and-reviewed compile, not a live
+// lookup. See driveiq-cloud/migrations/0004_vehicle_specs.sql for why this
+// is a plain table rather than another RAG document. Only covers a subset
+// of maintenance_types; ForecastCard falls back to the live Aiana lookup
+// for anything not in this table.
+export interface VehicleSpec {
+  id: number;
+  vehicle_id: number;
+  maintenance_type: string;
+  spec_text: string;
+  part_number: string | null;
+  source_note: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
 export interface AskSource {
   document: string;
   page: number | null;

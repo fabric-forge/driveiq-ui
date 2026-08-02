@@ -10,7 +10,7 @@ import { formatDate, daysSince, todayISO } from '@/lib/date'
 import { CATEGORY_META } from '@/lib/maintenanceCategories'
 import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
 import { forecastAianaQuery, forecastSpecPreviewQuery, reminderAianaQuery, stripMarkdown } from '@/lib/aianaQueries'
-import type { Reminder, MaintenanceRecord } from '@/types'
+import type { Reminder, MaintenanceRecord, VehicleSpec } from '@/types'
 
 function AskAianaLink({ query }: { query: string }) {
   return (
@@ -125,6 +125,7 @@ function ReminderCard({
 function ForecastCard({
   item,
   lastRecord,
+  curatedSpec,
   currentMileage,
   isExpanded,
   onToggle,
@@ -134,6 +135,7 @@ function ForecastCard({
 }: {
   item: UpcomingItem
   lastRecord?: MaintenanceRecord
+  curatedSpec?: VehicleSpec
   currentMileage: number
   isExpanded: boolean
   onToggle: () => void
@@ -152,15 +154,17 @@ function ForecastCard({
     ok: `${Math.round(item.milesRemaining).toLocaleString()} mi left`,
   }[item.status]
 
-  // Fetched once, on first expand, and cached indefinitely — an LLM+RAG call
-  // per card isn't free, and the answer for a given service type doesn't
-  // change between page loads. Uses a plain-text-requesting variant of the
-  // question — the deep-link (AskAianaLink below) uses the natural one, since
-  // that opens the full chat page where markdown renders properly.
+  // Only hit the live LLM+RAG lookup for types without a curated spec — a
+  // reviewed, exact fact beats a re-generated (and possibly re-truncated)
+  // answer every time. Fetched once, on first expand, and cached
+  // indefinitely — an LLM+RAG call per card isn't free, and the answer
+  // doesn't change between page loads. Uses a plain-text-requesting variant
+  // of the question — the deep-link (AskAianaLink below) uses the natural
+  // one, since that opens the full chat page where markdown renders properly.
   const spec = useQuery({
     queryKey: ['aiana-spec', item.type],
     queryFn: () => api.aiana.ask(forecastSpecPreviewQuery(item.type, item.name)),
-    enabled: isExpanded,
+    enabled: isExpanded && !curatedSpec,
     staleTime: Infinity,
     retry: false,
   })
@@ -250,13 +254,25 @@ function ForecastCard({
           </div>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              From the manual
-            </p>
-            {spec.isLoading && <p className="text-sm text-gray-400">Asking Aiana…</p>}
-            {spec.isError && <p className="text-sm text-gray-400">Couldn't reach Aiana just now.</p>}
-            {specPreview && <p className="text-sm text-gray-700">{specPreview}</p>}
+            {curatedSpec ? (
+              <>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Spec</p>
+                <p className="text-sm text-gray-700">{curatedSpec.spec_text}</p>
+                {curatedSpec.part_number && (
+                  <p className="text-xs text-gray-400 mt-1 font-mono">Toyota OEM {curatedSpec.part_number}</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  From the manual
+                </p>
+                {spec.isLoading && <p className="text-sm text-gray-400">Asking Aiana…</p>}
+                {spec.isError && <p className="text-sm text-gray-400">Couldn't reach Aiana just now.</p>}
+                {specPreview && <p className="text-sm text-gray-700">{specPreview}</p>}
+              </>
+            )}
             <div className="mt-3">
               <AskAianaLink query={aianaQuery} />
             </div>
@@ -316,6 +332,7 @@ export default function Dashboard() {
   const { data: reminders } = useQuery({ queryKey: ['reminders'], queryFn: () => api.reminders.list() })
   const { data: records } = useQuery({ queryKey: ['maintenance'], queryFn: () => api.maintenance.list() })
   const { data: carfaxReport } = useQuery({ queryKey: ['carfax-report'], queryFn: api.carfax.report, retry: false })
+  const { data: vehicleSpecs } = useQuery({ queryKey: ['vehicle-specs'], queryFn: api.vehicleSpecs.list })
 
   const updateMileage = useMutation({
     mutationFn: (mileage: number) => api.vehicle.updateMileage(mileage),
@@ -371,6 +388,12 @@ export default function Dashboard() {
     }
     return map
   }, [records])
+
+  const specByType = useMemo(() => {
+    const map = new Map<string, VehicleSpec>()
+    for (const s of vehicleSpecs ?? []) map.set(s.maintenance_type, s)
+    return map
+  }, [vehicleSpecs])
 
   const totalActionable = (reminders?.length ?? 0) + upcoming.length
 
@@ -572,6 +595,7 @@ export default function Dashboard() {
                 key={`forecast-${item.type}`}
                 item={item}
                 lastRecord={lastRecordByType.get(item.type)}
+                curatedSpec={specByType.get(item.type)}
                 currentMileage={vehicle.current_mileage ?? 0}
                 isExpanded={expandedForecast.has(item.type)}
                 onToggle={() => toggleForecast(item.type)}
