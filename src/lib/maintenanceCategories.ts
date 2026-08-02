@@ -21,6 +21,8 @@ const TYPE_TO_CATEGORY: Record<string, Category> = {
   cabin_filter: 'filters',
   brake_pads_front: 'brakes',
   brake_pads_rear: 'brakes',
+  brake_rotors_front: 'brakes',
+  brake_rotors_rear: 'brakes',
   tire_rotation: 'tires',
   tire_replacement: 'tires',
   inspection: 'inspections',
