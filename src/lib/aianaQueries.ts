@@ -26,3 +26,29 @@ export function forecastAianaQuery(type: string, name: string): string {
 export function reminderAianaQuery(title: string): string {
   return `Tell me what I should know about "${title}" for my vehicle, and point me to any relevant pages in the manual.`;
 }
+
+// Separate from forecastAianaQuery (used for the "Ask Aiana" deep link, which
+// opens the full chat page and should get Aiana's normal markdown-formatted
+// answer) — this variant is only for the inline What's Next card preview,
+// which has no room for headers/bullets/bold and needs a tight answer.
+const SPEC_PREVIEW_SUFFIX =
+  ' Answer in 2-3 short plain sentences only, no markdown formatting — no headers, no bold, no bullet points. This is shown in a small card with limited space.';
+
+export function forecastSpecPreviewQuery(type: string, name: string): string {
+  return `${forecastAianaQuery(type, name)}${SPEC_PREVIEW_SUFFIX}`;
+}
+
+// Belt-and-suspenders: models don't always fully honor "no markdown"
+// instructions, so strip common markdown tokens from the preview text too
+// rather than relying on the prompt alone.
+export function stripMarkdown(text: string): string {
+  return text
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/\n{2,}/g, ' ')
+    .replace(/\n/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
