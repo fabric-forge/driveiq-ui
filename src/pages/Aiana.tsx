@@ -3,9 +3,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Sparkles, Send } from 'lucide-react'
+import { Sparkles, Send, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
 import PageViewer from '@/components/PageViewer'
+import UploadDocumentModal from '@/components/UploadDocumentModal'
 import type { AskSource } from '@/types'
 
 interface Message {
@@ -22,6 +23,7 @@ export default function Aiana() {
   const [searchParams, setSearchParams] = useSearchParams()
   const bottomRef = useRef<HTMLDivElement>(null)
   const deepLinkFired = useRef(false)
+  const [uploadOpen, setUploadOpen] = useState(false)
 
   // Plain async function + local state rather than useMutation — this page
   // only ever has one ask in flight and doesn't need react-query's caching,
@@ -74,13 +76,23 @@ export default function Aiana() {
   }
 
   return (
+    <>
     <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px] bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-      <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-900 to-gray-800">
-        <Sparkles className="h-5 w-5 text-toyota-red" />
-        <div>
-          <h2 className="font-semibold text-white">Aiana</h2>
-          <p className="text-xs text-gray-400">Ask about your owner's manual, service history, or CARFAX report</p>
+      <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-900 to-gray-800">
+        <div className="flex items-center gap-2 min-w-0">
+          <Sparkles className="h-5 w-5 text-toyota-red shrink-0" />
+          <div className="min-w-0">
+            <h2 className="font-semibold text-white">Aiana</h2>
+            <p className="text-xs text-gray-400">Ask about your owner's manual, service history, or CARFAX report</p>
+          </div>
         </div>
+        <button
+          onClick={() => setUploadOpen(true)}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-300 border border-white/20 rounded-lg hover:bg-white/10 transition-colors"
+        >
+          <Upload className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Upload document</span>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
@@ -136,5 +148,7 @@ export default function Aiana() {
         </button>
       </form>
     </div>
+    <UploadDocumentModal open={uploadOpen} onClose={() => setUploadOpen(false)} />
+    </>
   )
 }

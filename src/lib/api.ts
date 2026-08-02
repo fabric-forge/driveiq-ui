@@ -8,7 +8,7 @@
 // on the OPTIONS preflight. VITE_API_URL can still override this (e.g. local
 // dev against a standalone Worker) — see .env.example.
 
-import type { Vehicle, MaintenanceRecord, Reminder, AskResponse, CarfaxReport, VehicleSpec } from '@/types';
+import type { Vehicle, MaintenanceRecord, Reminder, AskResponse, CarfaxReport, VehicleSpec, IngestChunk, IngestResponse } from '@/types';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -78,6 +78,17 @@ export const api = {
   },
   aiana: {
     ask: (query: string) => post<AskResponse>('/api/search/ask', { query }),
+    // Used by the document upload flow (src/lib/pdfIngest.ts) — same
+    // endpoints the local driveiq-cloud/scripts/ingest*.mjs scripts call,
+    // just invoked from the browser instead of a local wrangler dev session.
+    ingestChunks: (document_name: string, chunks: IngestChunk[]) =>
+      post<IngestResponse>('/api/search/ingest', { document_name, chunks }),
+    ingestPageImage: (document: string, page: number, variant: 'thumbnail' | 'full', bytes: ArrayBuffer) =>
+      apiFetchRaw(`/api/pages/ingest/${encodeURIComponent(document)}/${page}/${variant}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/png' },
+        body: bytes,
+      }),
   },
   carfax: {
     // No matching route on driveiq-cloud yet — 404 resolves to null so the
