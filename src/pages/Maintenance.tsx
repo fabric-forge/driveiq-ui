@@ -64,18 +64,6 @@ export default function Maintenance() {
     return activeCategory === 'all' ? items : items.filter((i) => i.category === activeCategory)
   }, [records, vehicle?.current_mileage, activeCategory])
 
-  const summary = useMemo(() => {
-    const map = new Map<string, { count: number; totalCost: number; lastDate: string }>()
-    for (const r of filtered) {
-      const entry = map.get(r.maintenance_type) ?? { count: 0, totalCost: 0, lastDate: r.date_performed }
-      entry.count += 1
-      entry.totalCost += r.cost ?? 0
-      if (r.date_performed > entry.lastDate) entry.lastDate = r.date_performed
-      map.set(r.maintenance_type, entry)
-    }
-    return [...map.entries()].sort((a, b) => b[1].count - a[1].count)
-  }, [filtered])
-
   if (isLoading) return <p className="text-toyota-gray text-center py-12">Loading maintenance history…</p>
 
   return (
@@ -130,29 +118,6 @@ export default function Maintenance() {
             </section>
           )}
 
-          {/* Summary */}
-          {summary.length > 0 && (
-            <section>
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500 mb-2">Summary</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {summary.map(([type, s]) => {
-                  const meta = CATEGORY_META[categorize(type)]
-                  const Icon = meta.icon
-                  return (
-                    <div key={type} className="bg-white border border-gray-200 rounded-lg p-3">
-                      <div className={`inline-flex p-1.5 rounded-md mb-1.5 ${meta.color}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      <p className="text-sm font-medium text-gray-900 capitalize truncate">{type.replace(/_/g, ' ')}</p>
-                      <p className="text-xs text-gray-500">
-                        {s.count}x · {formatDate(s.lastDate)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )}
         </div>
 
         {/* Calendar: past, current, and future (estimated) events */}
