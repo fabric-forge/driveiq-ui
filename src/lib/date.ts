@@ -10,3 +10,13 @@ export function formatDate(dateString: string): string {
   }
   return new Date(dateString).toLocaleDateString()
 }
+
+// Same local-date parsing as formatDate, so "days since" doesn't roll back a
+// day for date-only strings in timezones behind UTC.
+export function daysSince(dateString: string): number {
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.exec(dateString)
+  const then = dateOnly
+    ? new Date(Number(dateString.slice(0, 4)), Number(dateString.slice(5, 7)) - 1, Number(dateString.slice(8, 10)))
+    : new Date(dateString)
+  return Math.floor((Date.now() - then.getTime()) / 86_400_000)
+}

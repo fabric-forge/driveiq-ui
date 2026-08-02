@@ -8,7 +8,7 @@
 // on the OPTIONS preflight. VITE_API_URL can still override this (e.g. local
 // dev against a standalone Worker) — see .env.example.
 
-import type { Vehicle, MaintenanceRecord, Reminder, AskResponse } from '@/types';
+import type { Vehicle, MaintenanceRecord, Reminder, AskResponse, CarfaxReport } from '@/types';
 
 const BASE = import.meta.env.VITE_API_URL ?? '';
 
@@ -78,5 +78,17 @@ export const api = {
   },
   aiana: {
     ask: (query: string) => post<AskResponse>('/api/search/ask', { query }),
+  },
+  carfax: {
+    // No matching route on driveiq-cloud yet — 404 resolves to null so the
+    // dashboard's Est. Value / owner-count UI degrades gracefully instead of
+    // erroring, and lights up automatically once the route exists.
+    report: () =>
+      apiFetchRaw('/api/import/carfax-report')
+        .then((res) => res.json() as Promise<CarfaxReport>)
+        .catch((err) => {
+          if (err?.status === 404) return null;
+          throw err;
+        }),
   },
 };
