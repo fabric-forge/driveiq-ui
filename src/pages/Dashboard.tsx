@@ -6,7 +6,7 @@ import {
   TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles,
 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { formatDate, daysSince } from '@/lib/date'
+import { formatDate, daysSince, todayISO } from '@/lib/date'
 import { CATEGORY_META } from '@/lib/maintenanceCategories'
 import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
 import { forecastAianaQuery, reminderAianaQuery } from '@/lib/aianaQueries'
@@ -118,12 +118,18 @@ function ForecastCard({
   currentMileage,
   isExpanded,
   onToggle,
+  onLogService,
+  onMarkDone,
+  isPending,
 }: {
   item: UpcomingItem
   lastRecord?: MaintenanceRecord
   currentMileage: number
   isExpanded: boolean
   onToggle: () => void
+  onLogService: () => void
+  onMarkDone: () => void
+  isPending: boolean
 }) {
   const meta = CATEGORY_META[item.category]
   const Icon = meta.icon
@@ -210,6 +216,25 @@ function ForecastCard({
             </div>
           )}
 
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              onClick={onLogService}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              title="Log service with cost & provider"
+            >
+              <Plus className="h-4 w-4" />
+              Log service
+            </button>
+            <button
+              onClick={onMarkDone}
+              disabled={isPending}
+              className="flex-1 flex items-center justify-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+            >
+              <Check className="h-4 w-4" />
+              Mark done
+            </button>
+          </div>
+
           <div className="mt-4 pt-4 border-t border-gray-200">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
@@ -237,10 +262,17 @@ export default function Dashboard() {
   const [mileageInput, setMileageInput] = useState('')
   const [blurredCards, setBlurredCards] = useState<Set<string>>(new Set())
   const [expandedForecast, setExpandedForecast] = useState<Set<string>>(new Set())
-  const [logReminder, setLogReminder] = useState<Reminder | null>(null)
+  const [logTarget, setLogTarget] = useState<{ kind: 'reminder'; reminder: Reminder } | { kind: 'forecast'; item: UpcomingItem } | null>(null)
   const [logCost, setLogCost] = useState('')
   const [logProvider, setLogProvider] = useState('')
   const [logNotes, setLogNotes] = useState('')
+
+  const closeLogModal = () => {
+    setLogTarget(null)
+    setLogCost('')
+    setLogProvider('')
+    setLogNotes('')
+  }
 
   const toggleBlur = (cardId: string) => {
     setBlurredCards((prev) => {
@@ -280,10 +312,30 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
       queryClient.invalidateQueries({ queryKey: ['maintenance'] })
       queryClient.invalidateQueries({ queryKey: ['maintenance-summary'] })
-      setLogReminder(null)
-      setLogCost('')
-      setLogProvider('')
-      setLogNotes('')
+      closeLogModal()
+    },
+  })
+
+  // Forecast items aren't backed by a reminder — there's nothing to
+  // "complete", so logging one directly creates a maintenance record instead.
+  // That naturally resets the interval: computeUpcoming recomputes from this
+  // new record next render, so the item drops out of (or moves down) the
+  // upcoming list the same way completing a reminder does.
+  const logMaintenance = useMutation({
+    mutationFn: (input: { maintenance_type: string; cost?: number; service_provider?: string; notes?: string }) =>
+      api.maintenance.create({
+        vehicle_id: vehicle!.id,
+        maintenance_type: input.maintenance_type,
+        date_performed: todayISO(),
+        mileage: vehicle?.current_mileage ?? 0,
+        cost: input.cost,
+        service_provider: input.service_provider,
+        notes: input.notes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] })
+      queryClient.invalidateQueries({ queryKey: ['maintenance-summary'] })
+      closeLogModal()
     },
   })
 
@@ -485,7 +537,7 @@ export default function Dashboard() {
               <ReminderCard
                 key={`reminder-${reminder.id}`}
                 reminder={reminder}
-                onLogService={() => setLogReminder(reminder)}
+                onLogService={() => setLogTarget({ kind: 'reminder', reminder })}
                 onMarkDone={() => completeReminder.mutate({ id: reminder.id })}
                 isPending={completeReminder.isPending}
               />
@@ -498,39 +550,37 @@ export default function Dashboard() {
                 currentMileage={vehicle.current_mileage ?? 0}
                 isExpanded={expandedForecast.has(item.type)}
                 onToggle={() => toggleForecast(item.type)}
+                onLogService={() => setLogTarget({ kind: 'forecast', item })}
+                onMarkDone={() => logMaintenance.mutate({ maintenance_type: item.type })}
+                isPending={logMaintenance.isPending}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Log Service modal */}
-      {logReminder && (
+      {/* Log Service modal — shared by reminders (completes via /complete,
+          which auto-logs a maintenance record server-side) and forecast
+          items (no reminder to complete, so this logs a maintenance record
+          directly). */}
+      {logTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Log Service</h2>
-              <button
-                onClick={() => {
-                  setLogReminder(null)
-                  setLogCost('')
-                  setLogProvider('')
-                  setLogNotes('')
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={closeLogModal} className="text-gray-400 hover:text-gray-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Service Type</p>
-                <p className="font-medium">{logReminder.title}</p>
+                <p className="font-medium">{logTarget.kind === 'reminder' ? logTarget.reminder.title : logTarget.item.name}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Mileage</p>
                 <p className="font-medium">
-                  {(vehicle.current_mileage ?? logReminder.due_mileage ?? 0).toLocaleString()} miles
+                  {(vehicle.current_mileage ?? (logTarget.kind === 'reminder' ? logTarget.reminder.due_mileage : null) ?? 0).toLocaleString()} miles
                 </p>
               </div>
               <div>
@@ -564,33 +614,27 @@ export default function Dashboard() {
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() => {
-                    setLogReminder(null)
-                    setLogCost('')
-                    setLogProvider('')
-                    setLogNotes('')
-                  }}
-                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                >
+                <button onClick={closeLogModal} className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
                   Cancel
                 </button>
                 <button
-                  onClick={() =>
-                    completeReminder.mutate({
-                      id: logReminder.id,
-                      details: {
-                        mileage: vehicle.current_mileage ?? logReminder.due_mileage ?? undefined,
-                        cost: logCost ? parseFloat(logCost) : undefined,
-                        service_provider: logProvider || undefined,
-                        notes: logNotes || undefined,
-                      },
-                    })
-                  }
-                  disabled={completeReminder.isPending}
+                  onClick={() => {
+                    const cost = logCost ? parseFloat(logCost) : undefined
+                    const service_provider = logProvider || undefined
+                    const notes = logNotes || undefined
+                    if (logTarget.kind === 'reminder') {
+                      completeReminder.mutate({
+                        id: logTarget.reminder.id,
+                        details: { mileage: vehicle.current_mileage ?? logTarget.reminder.due_mileage ?? undefined, cost, service_provider, notes },
+                      })
+                    } else {
+                      logMaintenance.mutate({ maintenance_type: logTarget.item.type, cost, service_provider, notes })
+                    }
+                  }}
+                  disabled={completeReminder.isPending || logMaintenance.isPending}
                   className="flex-1 px-4 py-2 bg-toyota-red text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
                 >
-                  {completeReminder.isPending ? 'Saving...' : 'Save'}
+                  {completeReminder.isPending || logMaintenance.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>

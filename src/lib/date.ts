@@ -20,3 +20,11 @@ export function daysSince(dateString: string): number {
     : new Date(dateString)
   return Math.floor((Date.now() - then.getTime()) / 86_400_000)
 }
+
+// Today as a local YYYY-MM-DD date-only string, for maintenance records the
+// API requires an explicit date_performed for (unlike reminder completion,
+// which defaults to today server-side).
+export function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
