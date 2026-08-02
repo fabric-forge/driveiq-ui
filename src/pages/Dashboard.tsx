@@ -1,14 +1,32 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   Gauge, FileText, Settings2, Wrench, Bell, Check, Plus, X,
-  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock,
+  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, daysSince } from '@/lib/date'
 import { CATEGORY_META } from '@/lib/maintenanceCategories'
 import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
+import { forecastAianaQuery, reminderAianaQuery } from '@/lib/aianaQueries'
 import type { Reminder, MaintenanceRecord } from '@/types'
+
+function AskAianaLink({ query, className }: { query: string; className?: string }) {
+  return (
+    <Link
+      to={`/aiana?q=${encodeURIComponent(query)}`}
+      className={
+        className ??
+        'flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors'
+      }
+      title="Ask Aiana about this"
+    >
+      <Sparkles className="h-4 w-4" />
+      Ask Aiana
+    </Link>
+  )
+}
 
 const URGENCY_STYLE: Record<UpcomingItem['status'], { border: string; badge: string }> = {
   overdue: { border: 'border-red-500', badge: 'text-red-600 bg-red-50 border-red-200' },
@@ -35,23 +53,30 @@ function ReminderCard({
   onMarkDone: () => void
   isPending: boolean
 }) {
+  const isAppointment = reminder.category === 'appointment'
+
   return (
-    <div className="bg-white rounded-xl shadow-md border-l-4 border-toyota-red overflow-hidden">
+    <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden ${isAppointment ? 'border-blue-500' : 'border-toyota-red'}`}>
       <div className="p-4">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-red-50 text-toyota-red shrink-0">
+          <div className={`p-2 rounded-lg shrink-0 ${isAppointment ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-toyota-red'}`}>
             <CalendarClock className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
               <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
-              <Tag label="Reminder" className="bg-toyota-red text-white" />
+              {isAppointment ? (
+                <Tag label="Appointment" className="bg-blue-600 text-white" />
+              ) : (
+                <Tag label="Reminder" className="bg-toyota-red text-white" />
+              )}
             </div>
             <p className="text-sm text-gray-500 mt-0.5">
               {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
               {reminder.due_date && reminder.due_mileage && ' • '}
               {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
             </p>
+            {reminder.description && <p className="text-sm text-gray-500 mt-1">{reminder.description}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2 mt-4">
@@ -72,6 +97,16 @@ function ReminderCard({
             Mark done
           </button>
         </div>
+        {/* Nothing to look up in the manual for a scheduled appointment — only
+            for a part or fluid, so schedule-based reminders skip this. */}
+        {!isAppointment && (
+          <div className="mt-2">
+            <AskAianaLink
+              query={reminderAianaQuery(reminder.title)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -93,12 +128,24 @@ function ForecastCard({
   const meta = CATEGORY_META[item.category]
   const Icon = meta.icon
   const { border, badge } = URGENCY_STYLE[item.status]
+  const aianaQuery = forecastAianaQuery(item.type, item.name)
 
   const statusLabel = {
     overdue: 'Overdue',
     due_soon: 'Due soon',
     ok: `${Math.round(item.milesRemaining).toLocaleString()} mi left`,
   }[item.status]
+
+  // Fetched once, on first expand, and cached indefinitely — an LLM+RAG call
+  // per card isn't free, and the answer for a given service type doesn't
+  // change between page loads.
+  const spec = useQuery({
+    queryKey: ['aiana-spec', item.type],
+    queryFn: () => api.aiana.ask(aianaQuery),
+    enabled: isExpanded,
+    staleTime: Infinity,
+    retry: false,
+  })
 
   return (
     <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
@@ -162,6 +209,23 @@ function ForecastCard({
               )}
             </div>
           )}
+
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              From the manual
+            </p>
+            {spec.isLoading && <p className="text-sm text-gray-400">Asking Aiana…</p>}
+            {spec.isError && <p className="text-sm text-gray-400">Couldn't reach Aiana just now.</p>}
+            {spec.data && (
+              <p className="text-sm text-gray-700">
+                {spec.data.answer.length > 220 ? `${spec.data.answer.slice(0, 220).trim()}…` : spec.data.answer}
+              </p>
+            )}
+            <div className="mt-3">
+              <AskAianaLink query={aianaQuery} />
+            </div>
+          </div>
         </div>
       )}
     </div>

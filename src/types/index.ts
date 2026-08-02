@@ -60,6 +60,9 @@ export interface AskSource {
 export interface AskResponse {
   answer: string;
   sources: AskSource[];
+  // True when Aiana called the create_reminder tool during this turn — the
+  // caller should invalidate the ['reminders'] query so What's Next refreshes.
+  reminder_created?: boolean;
 }
 
 export interface Reminder {
@@ -79,6 +82,10 @@ export interface Reminder {
   notify_days_before: number;
   notify_miles_before: number;
   last_notified: string | null;
+  // 'appointment' when Aiana created this via create_reminder from a chat
+  // message; null for reminders the owner set up manually. Appointments skip
+  // the Ask Aiana button — there's no manual page to look up for an event.
+  category: 'appointment' | null;
   created_at: string;
   updated_at: string | null;
 }

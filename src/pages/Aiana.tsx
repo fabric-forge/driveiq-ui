@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Sparkles, Send } from 'lucide-react'
@@ -14,32 +15,62 @@ interface Message {
 }
 
 export default function Aiana() {
+  const queryClient = useQueryClient()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  const [isAsking, setIsAsking] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
   const bottomRef = useRef<HTMLDivElement>(null)
+  const deepLinkFired = useRef(false)
 
-  const ask = useMutation({
-    mutationFn: (query: string) => api.aiana.ask(query),
-    onSuccess: (res) => {
+  // Plain async function + local state rather than useMutation — this page
+  // only ever has one ask in flight and doesn't need react-query's caching,
+  // and a mutation triggered from an effect (the deep-link case below) can
+  // otherwise land on a stale observer if StrictMode's dev-only double-effect
+  // remounts the subscription between firing and settling.
+  async function runAsk(query: string) {
+    setIsAsking(true)
+    try {
+      const res = await api.aiana.ask(query)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.answer, sources: res.sources }])
-    },
-    onError: (err: unknown) => {
+      if (res.reminder_created) {
+        queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      }
+    } catch (err) {
       const message = err instanceof Error ? err.message : 'Something went wrong asking Aiana.'
       setMessages((prev) => [...prev, { role: 'assistant', content: message }])
-    },
-  })
+    } finally {
+      setIsAsking(false)
+    }
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, ask.isPending])
+  }, [messages, isAsking])
+
+  // Deep link from a What's Next card (?q=...) — ask it once on arrival,
+  // then drop it from the URL so refreshing doesn't re-ask.
+  useEffect(() => {
+    const initialQuery = searchParams.get('q')
+    if (!initialQuery || deepLinkFired.current) return
+    deepLinkFired.current = true
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('q')
+      return next
+    }, { replace: true })
+    setMessages((prev) => [...prev, { role: 'user', content: initialQuery }])
+    runAsk(initialQuery)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     const query = input.trim()
-    if (!query || ask.isPending) return
+    if (!query || isAsking) return
     setMessages((prev) => [...prev, { role: 'user', content: query }])
     setInput('')
-    ask.mutate(query)
+    runAsk(query)
   }
 
   return (
@@ -79,7 +110,7 @@ export default function Aiana() {
           </div>
         ))}
 
-        {ask.isPending && (
+        {isAsking && (
           <div className="flex justify-start">
             <div className="bg-gray-100 text-gray-500 rounded-lg px-4 py-3 text-sm">Thinking…</div>
           </div>
@@ -97,7 +128,7 @@ export default function Aiana() {
         />
         <button
           type="submit"
-          disabled={!input.trim() || ask.isPending}
+          disabled={!input.trim() || isAsking}
           className="flex items-center gap-1.5 px-4 py-2 bg-toyota-red text-white font-medium rounded-lg hover:bg-red-600 disabled:opacity-50 transition-colors"
         >
           <Send className="h-4 w-4" />
