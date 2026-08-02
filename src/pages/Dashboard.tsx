@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Gauge, FileText, Settings2, Wrench, Bell, Check, Plus, X,
-  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock,
+  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, daysSince } from '@/lib/date'
@@ -14,6 +14,65 @@ const URGENCY_STYLE: Record<UpcomingItem['status'], { border: string; badge: str
   overdue: { border: 'border-red-500', badge: 'text-red-600 bg-red-50 border-red-200' },
   due_soon: { border: 'border-amber-500', badge: 'text-amber-600 bg-amber-50 border-amber-200' },
   ok: { border: 'border-emerald-500', badge: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
+}
+
+function CardTag({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full ${className}`}>
+      {label}
+    </span>
+  )
+}
+
+function ReminderCard({
+  reminder,
+  onLogService,
+  onMarkDone,
+  isPending,
+}: {
+  reminder: Reminder
+  onLogService: () => void
+  onMarkDone: () => void
+  isPending: boolean
+}) {
+  return (
+    <div className="relative bg-white rounded-xl shadow-md border-l-4 border-toyota-red overflow-hidden">
+      <CardTag label="Reminder" className="bg-toyota-red text-white" />
+      <div className="p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-red-50 text-toyota-red shrink-0">
+            <CalendarClock className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1 pr-14">
+            <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
+            <p className="text-sm text-gray-500">
+              {reminder.due_date && `Due ${formatDate(reminder.due_date)}`}
+              {reminder.due_date && reminder.due_mileage && ' • '}
+              {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 mt-4">
+          <button
+            onClick={onLogService}
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            title="Log service with cost & provider"
+          >
+            <Plus className="h-4 w-4" />
+            Log service
+          </button>
+          <button
+            onClick={onMarkDone}
+            disabled={isPending}
+            className="flex-1 flex items-center justify-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
+          >
+            <Check className="h-4 w-4" />
+            Mark done
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ForecastCard({
@@ -40,11 +99,12 @@ function ForecastCard({
   }[item.status]
 
   return (
-    <div className={`bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
+    <div className={`relative bg-white rounded-xl shadow-md border-l-4 overflow-hidden transition-all ${border}`}>
+      <CardTag label="Forecast" className="bg-gray-900 text-white" />
       <button onClick={onToggle} className="w-full p-4 text-left hover:bg-gray-50 transition-colors">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${meta.color}`}>
+          <div className="flex items-center gap-3 pr-14">
+            <div className={`p-2 rounded-lg shrink-0 ${meta.color}`}>
               <Icon className="h-5 w-5" />
             </div>
             <div>
@@ -135,7 +195,6 @@ export default function Dashboard() {
   const { data: vehicle, isLoading, error } = useQuery({ queryKey: ['vehicle'], queryFn: api.vehicle.get })
   const { data: reminders } = useQuery({ queryKey: ['reminders'], queryFn: () => api.reminders.list() })
   const { data: records } = useQuery({ queryKey: ['maintenance'], queryFn: () => api.maintenance.list() })
-  const { data: summary } = useQuery({ queryKey: ['maintenance-summary'], queryFn: api.maintenance.summary })
   const { data: carfaxReport } = useQuery({ queryKey: ['carfax-report'], queryFn: api.carfax.report, retry: false })
 
   const updateMileage = useMutation({
@@ -173,13 +232,15 @@ export default function Dashboard() {
     return map
   }, [records])
 
+  const totalActionable = (reminders?.length ?? 0) + upcoming.length
+
   if (isLoading) return <p className="text-toyota-gray text-center py-12">Loading vehicle…</p>
   if (error) return <p className="text-red-600 text-center py-12">No vehicle on record yet.</p>
   if (!vehicle) return null
 
   return (
     <div className="space-y-6">
-      {/* Vehicle hero: title + mileage update */}
+      {/* Vehicle block: title, mileage update, and all vehicle stats together */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-toyota-red blur-3xl" />
@@ -187,7 +248,7 @@ export default function Dashboard() {
         </div>
 
         <div className="relative p-8">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="px-3 py-1 text-xs font-bold uppercase tracking-wider bg-toyota-red rounded-full">
@@ -239,53 +300,139 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div
+              onClick={() => toggleBlur('odometer')}
+              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              title="Click to blur/unblur"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Gauge className="h-5 w-5 text-blue-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Odometer</span>
+              </div>
+              <p
+                className={`text-2xl lg:text-3xl font-bold text-white transition-all ${
+                  blurredCards.has('odometer') ? 'blur-md select-none' : ''
+                }`}
+              >
+                {vehicle.current_mileage?.toLocaleString() ?? '—'}
+              </p>
+              <p className="text-sm text-gray-500">miles</p>
+            </div>
+
+            <div
+              onClick={() => toggleBlur('value')}
+              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              title="Click to blur/unblur"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-5 w-5 text-green-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Est. Value</span>
+              </div>
+              <p
+                className={`text-2xl lg:text-3xl font-bold text-white transition-all ${
+                  blurredCards.has('value') ? 'blur-md select-none' : ''
+                }`}
+              >
+                {carfaxReport?.retail_value ? `$${carfaxReport.retail_value.toLocaleString()}` : '—'}
+              </p>
+              <p className="text-sm text-gray-500">CARFAX estimate</p>
+            </div>
+
+            <div className="bg-green-500/10 backdrop-blur-sm rounded-xl p-4 border border-green-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-5 w-5 text-green-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-green-400">Recalls</span>
+              </div>
+              <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
+              <p className="text-sm text-green-500/70">No open recalls</p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <Settings2 className="h-5 w-5 text-cyan-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Engine</span>
+              </div>
+              <p className="text-lg lg:text-xl font-bold text-white">{vehicle.engine ?? '—'}</p>
+              <p className="text-sm text-gray-500">{vehicle.drivetrain ?? ''}</p>
+            </div>
+
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+              <div className="flex items-center gap-2 mb-2">
+                <Wrench className="h-5 w-5 text-amber-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Transmission</span>
+              </div>
+              <p className="text-lg lg:text-xl font-bold text-white">{vehicle.transmission ?? '—'}</p>
+            </div>
+
+            <div
+              onClick={() => toggleBlur('vin')}
+              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              title="Click to blur/unblur"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-5 w-5 text-purple-400" />
+                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">VIN</span>
+              </div>
+              <p
+                className={`text-sm lg:text-base font-mono font-bold text-white truncate transition-all ${
+                  blurredCards.has('vin') ? 'blur-md select-none' : ''
+                }`}
+                title={vehicle.vin}
+              >
+                {vehicle.vin}
+              </p>
+              <p className="text-sm text-gray-500">Vehicle ID</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Reminders — directly below the mileage update control */}
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-toyota-red" />
-          Reminders
-        </h2>
-        {reminders && reminders.length > 0 ? (
-          <div className="space-y-3">
-            {reminders.map((reminder) => (
-              <div
-                key={reminder.id}
-                className="flex flex-wrap items-center justify-between gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-gray-900 break-words">{reminder.title}</p>
-                  <p className="text-sm text-gray-600">
-                    {reminder.due_date && `Due: ${formatDate(reminder.due_date)}`}
-                    {reminder.due_date && reminder.due_mileage && ' • '}
-                    {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} miles`}
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center gap-2">
-                  <button
-                    onClick={() => setLogReminder(reminder)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                    title="Log service with cost & provider"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Log service
-                  </button>
-                  <button
-                    onClick={() => completeReminder.mutate({ id: reminder.id })}
-                    disabled={completeReminder.isPending}
-                    className="flex items-center gap-1.5 border border-toyota-red text-toyota-red px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-red-50 disabled:opacity-50 transition-colors"
-                  >
-                    <Check className="h-4 w-4" />
-                    Mark done
-                  </button>
-                </div>
-              </div>
+      {/* Reminders + Maintenance Forecast, unified into one "what's next" grid.
+          Reminders (fixed commitments) always sort first with a solid
+          toyota-red border/tag; forecast items (interval projections) follow,
+          urgency-sorted, with a neutral tag and urgency-colored border. */}
+      <div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Bell className="h-5 w-5 text-toyota-red" />
+              What's Next
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5">Reminders you've set, plus what's due based on service history</p>
+          </div>
+          {totalActionable > 0 && (
+            <span className="shrink-0 px-3 py-1 rounded-full text-xs font-bold bg-toyota-red text-white">
+              {totalActionable} to review
+            </span>
+          )}
+        </div>
+
+        {totalActionable === 0 ? (
+          <p className="text-toyota-gray text-center py-6 bg-white rounded-xl shadow-md">Nothing due right now.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reminders?.map((reminder) => (
+              <ReminderCard
+                key={`reminder-${reminder.id}`}
+                reminder={reminder}
+                onLogService={() => setLogReminder(reminder)}
+                onMarkDone={() => completeReminder.mutate({ id: reminder.id })}
+                isPending={completeReminder.isPending}
+              />
+            ))}
+            {upcoming.map((item) => (
+              <ForecastCard
+                key={`forecast-${item.type}`}
+                item={item}
+                lastRecord={lastRecordByType.get(item.type)}
+                currentMileage={vehicle.current_mileage ?? 0}
+                isExpanded={expandedForecast.has(item.type)}
+                onToggle={() => toggleForecast(item.type)}
+              />
             ))}
           </div>
-        ) : (
-          <p className="text-toyota-gray text-center py-6">No active reminders.</p>
         )}
       </div>
 
@@ -379,149 +526,6 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vehicle stats */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-toyota-red blur-3xl" />
-          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-blue-500 blur-3xl" />
-        </div>
-        <div className="relative">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <div
-              onClick={() => toggleBlur('odometer')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
-              title="Click to blur/unblur"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Gauge className="h-5 w-5 text-blue-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Odometer</span>
-              </div>
-              <p
-                className={`text-2xl lg:text-3xl font-bold text-white transition-all ${
-                  blurredCards.has('odometer') ? 'blur-md select-none' : ''
-                }`}
-              >
-                {vehicle.current_mileage?.toLocaleString() ?? '—'}
-              </p>
-              <p className="text-sm text-gray-500">miles</p>
-            </div>
-
-            <div
-              onClick={() => toggleBlur('value')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
-              title="Click to blur/unblur"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-green-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Est. Value</span>
-              </div>
-              <p
-                className={`text-2xl lg:text-3xl font-bold text-white transition-all ${
-                  blurredCards.has('value') ? 'blur-md select-none' : ''
-                }`}
-              >
-                {carfaxReport?.retail_value ? `$${carfaxReport.retail_value.toLocaleString()}` : '—'}
-              </p>
-              <p className="text-sm text-gray-500">CARFAX estimate</p>
-            </div>
-
-            <div className="bg-green-500/10 backdrop-blur-sm rounded-xl p-4 border border-green-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-green-400">Recalls</span>
-              </div>
-              <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
-              <p className="text-sm text-green-500/70">No open recalls</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <Settings2 className="h-5 w-5 text-cyan-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Engine</span>
-              </div>
-              <p className="text-lg lg:text-xl font-bold text-white">{vehicle.engine ?? '—'}</p>
-              <p className="text-sm text-gray-500">{vehicle.drivetrain ?? ''}</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
-                <Wrench className="h-5 w-5 text-amber-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Transmission</span>
-              </div>
-              <p className="text-lg lg:text-xl font-bold text-white">{vehicle.transmission ?? '—'}</p>
-            </div>
-
-            <div
-              onClick={() => toggleBlur('vin')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
-              title="Click to blur/unblur"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="h-5 w-5 text-purple-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-gray-400">VIN</span>
-              </div>
-              <p
-                className={`text-sm lg:text-base font-mono font-bold text-white truncate transition-all ${
-                  blurredCards.has('vin') ? 'blur-md select-none' : ''
-                }`}
-                title={vehicle.vin}
-              >
-                {vehicle.vin}
-              </p>
-              <p className="text-sm text-gray-500">Vehicle ID</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Maintenance Forecast */}
-      {upcoming.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Maintenance Forecast</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {upcoming.map((item) => (
-              <ForecastCard
-                key={item.type}
-                item={item}
-                lastRecord={lastRecordByType.get(item.type)}
-                currentMileage={vehicle.current_mileage ?? 0}
-                isExpanded={expandedForecast.has(item.type)}
-                onToggle={() => toggleForecast(item.type)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Service History Summary */}
-      {summary && summary.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-4">Service History Summary</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-sm text-gray-500 border-b">
-                  <th className="pb-3 font-medium">Service Type</th>
-                  <th className="pb-3 font-medium">Count</th>
-                  <th className="pb-3 font-medium">Total Cost</th>
-                  <th className="pb-3 font-medium">Last Performed</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {summary.map((s) => (
-                  <tr key={s.type} className="border-b last:border-b-0">
-                    <td className="py-3 capitalize font-medium text-gray-900">{s.type.replace(/_/g, ' ')}</td>
-                    <td className="py-3 text-gray-600">{s.count}</td>
-                    <td className="py-3 text-gray-600">${s.total_cost.toFixed(2)}</td>
-                    <td className="py-3 text-gray-600">{s.last_performed && formatDate(s.last_performed)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
