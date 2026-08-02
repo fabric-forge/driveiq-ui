@@ -41,6 +41,14 @@ export interface MaintenanceRecord {
   updated_at: string | null;
 }
 
+// From a CARFAX import (see reference backend/app/services/carfax_parser.py).
+// Not yet ported to driveiq-cloud — api.carfax.report() 404s gracefully until
+// a matching /api/import route exists there.
+export interface CarfaxReport {
+  retail_value: number;
+  owner_count: number;
+}
+
 export interface AskSource {
   document: string;
   page: number | null;
