@@ -82,6 +82,20 @@ export interface AskResponse {
   reminder_created?: boolean;
 }
 
+// Wire shapes for POST /api/search/ingest — used by the Aiana document
+// upload flow (src/lib/pdfIngest.ts), which parses/chunks/renders PDFs
+// client-side and posts the results to the same ingest endpoints the local
+// driveiq-cloud/scripts/ingest*.mjs scripts use.
+export interface IngestChunk {
+  content: string;
+  chunk_index: number;
+  page_number: number | null;
+}
+
+export interface IngestResponse {
+  ingested: number;
+}
+
 export interface Reminder {
   id: number;
   vehicle_id: number;
