@@ -25,6 +25,7 @@ const TYPE_TO_CATEGORY: Record<string, Category> = {
   brake_rotors_rear: 'brakes',
   tire_rotation: 'tires',
   tire_replacement: 'tires',
+  alignment: 'tires',
   inspection: 'inspections',
   service: 'other',
   rustproofing: 'other',
