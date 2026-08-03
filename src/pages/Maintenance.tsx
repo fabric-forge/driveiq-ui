@@ -7,7 +7,7 @@ import { categorize, CATEGORY_META, type Category } from '@/lib/maintenanceCateg
 import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
 import MaintenanceCalendar from '@/components/MaintenanceCalendar'
 
-const CATEGORIES: Category[] = ['fluids', 'filters', 'brakes', 'tires', 'inspections', 'other']
+const CATEGORIES: Category[] = ['fluids', 'filters', 'brakes', 'tires', 'inspections', 'electrical', 'other']
 
 function UpcomingCard({ item }: { item: UpcomingItem }) {
   const meta = CATEGORY_META[item.category]

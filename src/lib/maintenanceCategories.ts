@@ -1,7 +1,7 @@
-import { Droplets, Filter as FilterIcon, Disc, CircleDot, ClipboardCheck, Wrench } from 'lucide-react'
+import { Droplets, Filter as FilterIcon, Disc, CircleDot, ClipboardCheck, Wrench, Zap } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-export type Category = 'fluids' | 'filters' | 'brakes' | 'tires' | 'inspections' | 'other'
+export type Category = 'fluids' | 'filters' | 'brakes' | 'tires' | 'inspections' | 'electrical' | 'other'
 
 export const CATEGORY_META: Record<Category, { label: string; icon: LucideIcon; color: string }> = {
   fluids: { label: 'Fluids', icon: Droplets, color: 'text-blue-600 bg-blue-50' },
@@ -9,6 +9,7 @@ export const CATEGORY_META: Record<Category, { label: string; icon: LucideIcon; 
   brakes: { label: 'Brakes', icon: Disc, color: 'text-red-600 bg-red-50' },
   tires: { label: 'Tires', icon: CircleDot, color: 'text-gray-700 bg-gray-100' },
   inspections: { label: 'Inspections', icon: ClipboardCheck, color: 'text-purple-600 bg-purple-50' },
+  electrical: { label: 'Electrical', icon: Zap, color: 'text-yellow-600 bg-yellow-50' },
   other: { label: 'Other', icon: Wrench, color: 'text-amber-600 bg-amber-50' },
 }
 
@@ -31,7 +32,7 @@ const TYPE_TO_CATEGORY: Record<string, Category> = {
   rustproofing: 'other',
   spark_plugs: 'other',
   drive_belt: 'other',
-  battery: 'other',
+  battery: 'electrical',
   wiper_blades: 'other',
 }
 
