@@ -5,13 +5,18 @@
 // 130,000 mi milestone (oil/filter, tire rotation due; brake/fluid/wiper
 // inspect).
 import type { MaintenanceRecord } from '@/types'
+import type { Category } from '@/lib/maintenanceCategories'
 
 export interface ScheduleItem {
   type: string
   name: string
   intervalMiles: number
   intervalMonths: number
-  category: 'fluids' | 'filters' | 'brakes' | 'tires' | 'other'
+  // Reuses maintenanceCategories.ts's Category type directly rather than a
+  // second, independently-maintained union — a prior duplicate definition
+  // here (missing 'inspections' and 'electrical') silently broke the
+  // Electrical filter's Upcoming Service section for battery.
+  category: Category
   priority: 'high' | 'medium' | 'low'
 }
 
@@ -27,7 +32,7 @@ export const MAINTENANCE_SCHEDULE: ScheduleItem[] = [
   { type: 'drive_belt', name: 'Drive Belt', intervalMiles: 100000, intervalMonths: 120, category: 'other', priority: 'medium' },
   { type: 'brake_pads_front', name: 'Front Brake Pads', intervalMiles: 40000, intervalMonths: 48, category: 'brakes', priority: 'high' },
   { type: 'brake_pads_rear', name: 'Rear Brake Pads', intervalMiles: 50000, intervalMonths: 60, category: 'brakes', priority: 'high' },
-  { type: 'battery', name: 'Battery', intervalMiles: 50000, intervalMonths: 48, category: 'other', priority: 'medium' },
+  { type: 'battery', name: 'Battery', intervalMiles: 50000, intervalMonths: 48, category: 'electrical', priority: 'medium' },
   { type: 'wiper_blades', name: 'Wiper Blades', intervalMiles: 15000, intervalMonths: 12, category: 'other', priority: 'low' },
 ]
 
