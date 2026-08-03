@@ -21,6 +21,7 @@ const DOT_COLOR: Record<Category, string> = {
   brakes: 'bg-red-500',
   tires: 'bg-gray-600',
   inspections: 'bg-purple-500',
+  electrical: 'bg-yellow-500',
   other: 'bg-amber-500',
 }
 
