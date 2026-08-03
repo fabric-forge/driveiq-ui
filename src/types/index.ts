@@ -138,3 +138,16 @@ export interface Recall {
   created_at: string;
   updated_at: string | null;
 }
+
+// Theft/salvage title-brand check — see driveiq-cloud/migrations/0006_title_checks.sql.
+export interface TitleCheck {
+  id: number;
+  vehicle_id: number;
+  source: string;
+  theft_status: 'clear' | 'flagged';
+  salvage_status: 'clear' | 'flagged';
+  checked_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string | null;
+}

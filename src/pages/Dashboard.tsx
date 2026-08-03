@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Gauge, FileText, Settings2, Wrench, Bell, Check, Plus, X,
-  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles, AlertTriangle,
+  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles, AlertTriangle, ShieldCheck,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, daysSince, todayISO } from '@/lib/date'
@@ -335,6 +335,7 @@ export default function Dashboard() {
   const { data: carfaxReport } = useQuery({ queryKey: ['carfax-report'], queryFn: api.carfax.report, retry: false })
   const { data: vehicleSpecs } = useQuery({ queryKey: ['vehicle-specs'], queryFn: api.vehicleSpecs.list })
   const { data: recalls } = useQuery({ queryKey: ['recalls'], queryFn: api.recalls.list })
+  const { data: titleChecks } = useQuery({ queryKey: ['title-checks'], queryFn: api.titleChecks.list })
 
   const updateMileage = useMutation({
     mutationFn: (mileage: number) => api.vehicle.updateMileage(mileage),
@@ -403,6 +404,10 @@ export default function Dashboard() {
   }, [vehicleSpecs])
 
   const openRecalls = useMemo(() => (recalls ?? []).filter((r) => r.status === 'open'), [recalls])
+  const titleFlagged = useMemo(
+    () => (titleChecks ?? []).some((t) => t.theft_status === 'flagged' || t.salvage_status === 'flagged'),
+    [titleChecks]
+  )
 
   const totalActionable = (reminders?.length ?? 0) + upcoming.length
 
@@ -473,7 +478,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div
               onClick={() => toggleBlur('odometer')}
               className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
@@ -587,6 +592,46 @@ export default function Dashboard() {
                 {vehicle.vin}
               </p>
               <p className="text-sm text-gray-500">Vehicle ID</p>
+            </div>
+
+            <div
+              className={`rounded-xl p-4 border backdrop-blur-sm ${
+                !titleChecks
+                  ? 'bg-white/5 border-white/10'
+                  : titleFlagged
+                    ? 'bg-red-500/10 border-red-500/20'
+                    : 'bg-green-500/10 border-green-500/20'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {!titleChecks ? (
+                  <ShieldCheck className="h-5 w-5 text-gray-400" />
+                ) : titleFlagged ? (
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                ) : (
+                  <ShieldCheck className="h-5 w-5 text-green-400" />
+                )}
+                <span
+                  className={`text-xs font-medium uppercase tracking-wider ${
+                    !titleChecks ? 'text-gray-400' : titleFlagged ? 'text-red-400' : 'text-green-400'
+                  }`}
+                >
+                  Title
+                </span>
+              </div>
+              {!titleChecks ? (
+                <p className="text-2xl lg:text-3xl font-bold text-white">—</p>
+              ) : titleFlagged ? (
+                <>
+                  <p className="text-2xl lg:text-3xl font-bold text-red-400">Flagged</p>
+                  <p className="text-sm text-red-500/70">Theft or salvage record</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
+                  <p className="text-sm text-green-500/70">No theft or salvage record</p>
+                </>
+              )}
             </div>
           </div>
         </div>
