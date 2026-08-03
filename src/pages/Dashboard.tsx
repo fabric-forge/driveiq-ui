@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Gauge, FileText, Settings2, Wrench, Bell, Check, Plus, X,
-  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles, AlertTriangle, ShieldCheck,
+  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, daysSince, todayISO } from '@/lib/date'
@@ -478,7 +478,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               onClick={() => toggleBlur('odometer')}
               className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
@@ -521,40 +521,54 @@ export default function Dashboard() {
               onClick={() => recalls && setRecallsOpen(true)}
               disabled={!recalls}
               className={`text-left rounded-xl p-4 border backdrop-blur-sm transition-colors ${
-                !recalls
+                !recalls || !titleChecks
                   ? 'bg-white/5 border-white/10'
-                  : openRecalls.length > 0
+                  : openRecalls.length > 0 || titleFlagged
                     ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/15'
                     : 'bg-green-500/10 border-green-500/20 hover:bg-green-500/15'
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                {!recalls ? null : openRecalls.length > 0 ? (
+                {!recalls || !titleChecks ? null : openRecalls.length > 0 || titleFlagged ? (
                   <AlertTriangle className="h-5 w-5 text-red-400" />
                 ) : (
                   <CheckCircle2 className="h-5 w-5 text-green-400" />
                 )}
                 <span
                   className={`text-xs font-medium uppercase tracking-wider ${
-                    !recalls ? 'text-gray-400' : openRecalls.length > 0 ? 'text-red-400' : 'text-green-400'
+                    !recalls || !titleChecks
+                      ? 'text-gray-400'
+                      : openRecalls.length > 0 || titleFlagged
+                        ? 'text-red-400'
+                        : 'text-green-400'
                   }`}
                 >
-                  Recalls
+                  Recalls &amp; Title
                 </span>
               </div>
-              {!recalls ? (
+              {!recalls || !titleChecks ? (
                 <p className="text-2xl lg:text-3xl font-bold text-white">—</p>
-              ) : openRecalls.length > 0 ? (
-                <>
-                  <p className="text-2xl lg:text-3xl font-bold text-red-400">{openRecalls.length} Open</p>
-                  <p className="text-sm text-red-500/70">Tap for details</p>
-                </>
               ) : (
-                <>
-                  <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
-                  <p className="text-sm text-green-500/70">No open recalls</p>
-                </>
+                <div className="space-y-0.5">
+                  <p className={`text-sm font-bold ${openRecalls.length > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    Recalls: {openRecalls.length > 0 ? `${openRecalls.length} Open` : 'Clear'}
+                  </p>
+                  <p className={`text-sm font-bold ${titleFlagged ? 'text-red-400' : 'text-green-400'}`}>
+                    Title: {titleFlagged ? 'Flagged' : 'Clear'}
+                  </p>
+                </div>
               )}
+              <p
+                className={`text-sm mt-1 ${
+                  !recalls || !titleChecks
+                    ? 'text-gray-500'
+                    : openRecalls.length > 0 || titleFlagged
+                      ? 'text-red-500/70'
+                      : 'text-green-500/70'
+                }`}
+              >
+                Tap for recall details
+              </p>
             </button>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
@@ -594,45 +608,6 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">Vehicle ID</p>
             </div>
 
-            <div
-              className={`rounded-xl p-4 border backdrop-blur-sm ${
-                !titleChecks
-                  ? 'bg-white/5 border-white/10'
-                  : titleFlagged
-                    ? 'bg-red-500/10 border-red-500/20'
-                    : 'bg-green-500/10 border-green-500/20'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                {!titleChecks ? (
-                  <ShieldCheck className="h-5 w-5 text-gray-400" />
-                ) : titleFlagged ? (
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                ) : (
-                  <ShieldCheck className="h-5 w-5 text-green-400" />
-                )}
-                <span
-                  className={`text-xs font-medium uppercase tracking-wider ${
-                    !titleChecks ? 'text-gray-400' : titleFlagged ? 'text-red-400' : 'text-green-400'
-                  }`}
-                >
-                  Title
-                </span>
-              </div>
-              {!titleChecks ? (
-                <p className="text-2xl lg:text-3xl font-bold text-white">—</p>
-              ) : titleFlagged ? (
-                <>
-                  <p className="text-2xl lg:text-3xl font-bold text-red-400">Flagged</p>
-                  <p className="text-sm text-red-500/70">Theft or salvage record</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
-                  <p className="text-sm text-green-500/70">No theft or salvage record</p>
-                </>
-              )}
-            </div>
           </div>
         </div>
       </div>
