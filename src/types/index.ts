@@ -120,3 +120,21 @@ export interface Reminder {
   created_at: string;
   updated_at: string | null;
 }
+
+// NHTSA recall records — see driveiq-cloud/migrations/0005_recalls.sql.
+// status defaults to 'open' at seed time since the source VIN report only
+// confirms a campaign + remedy-availability date, not whether this
+// vehicle's own remedy was completed.
+export interface Recall {
+  id: number;
+  vehicle_id: number;
+  nhtsa_campaign: string;
+  component: string;
+  summary: string;
+  consequence: string | null;
+  remedy: string | null;
+  report_receipt_date: string | null;
+  status: 'open' | 'remedied';
+  created_at: string;
+  updated_at: string | null;
+}

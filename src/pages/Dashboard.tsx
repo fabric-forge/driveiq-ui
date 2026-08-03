@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   Gauge, FileText, Settings2, Wrench, Bell, Check, Plus, X,
-  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles,
+  TrendingUp, CheckCircle2, ChevronDown, ChevronUp, MapPin, Clock, CalendarClock, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { formatDate, daysSince, todayISO } from '@/lib/date'
@@ -293,6 +293,7 @@ export default function Dashboard() {
   const [logCost, setLogCost] = useState('')
   const [logProvider, setLogProvider] = useState('')
   const [logNotes, setLogNotes] = useState('')
+  const [recallsOpen, setRecallsOpen] = useState(false)
 
   const closeLogModal = () => {
     setLogTarget(null)
@@ -333,6 +334,7 @@ export default function Dashboard() {
   const { data: records } = useQuery({ queryKey: ['maintenance'], queryFn: () => api.maintenance.list() })
   const { data: carfaxReport } = useQuery({ queryKey: ['carfax-report'], queryFn: api.carfax.report, retry: false })
   const { data: vehicleSpecs } = useQuery({ queryKey: ['vehicle-specs'], queryFn: api.vehicleSpecs.list })
+  const { data: recalls } = useQuery({ queryKey: ['recalls'], queryFn: api.recalls.list })
 
   const updateMileage = useMutation({
     mutationFn: (mileage: number) => api.vehicle.updateMileage(mileage),
@@ -351,6 +353,11 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ['maintenance-summary'] })
       closeLogModal()
     },
+  })
+
+  const updateRecallStatus = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: 'open' | 'remedied' }) => api.recalls.updateStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['recalls'] }),
   })
 
   // Forecast items aren't backed by a reminder — there's nothing to
@@ -394,6 +401,8 @@ export default function Dashboard() {
     for (const s of vehicleSpecs ?? []) map.set(s.maintenance_type, s)
     return map
   }, [vehicleSpecs])
+
+  const openRecalls = useMemo(() => (recalls ?? []).filter((r) => r.status === 'open'), [recalls])
 
   const totalActionable = (reminders?.length ?? 0) + upcoming.length
 
@@ -503,14 +512,45 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">CARFAX estimate</p>
             </div>
 
-            <div className="bg-green-500/10 backdrop-blur-sm rounded-xl p-4 border border-green-500/20">
+            <button
+              onClick={() => recalls && setRecallsOpen(true)}
+              disabled={!recalls}
+              className={`text-left rounded-xl p-4 border backdrop-blur-sm transition-colors ${
+                !recalls
+                  ? 'bg-white/5 border-white/10'
+                  : openRecalls.length > 0
+                    ? 'bg-red-500/10 border-red-500/20 hover:bg-red-500/15'
+                    : 'bg-green-500/10 border-green-500/20 hover:bg-green-500/15'
+              }`}
+            >
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-400" />
-                <span className="text-xs font-medium uppercase tracking-wider text-green-400">Recalls</span>
+                {!recalls ? null : openRecalls.length > 0 ? (
+                  <AlertTriangle className="h-5 w-5 text-red-400" />
+                ) : (
+                  <CheckCircle2 className="h-5 w-5 text-green-400" />
+                )}
+                <span
+                  className={`text-xs font-medium uppercase tracking-wider ${
+                    !recalls ? 'text-gray-400' : openRecalls.length > 0 ? 'text-red-400' : 'text-green-400'
+                  }`}
+                >
+                  Recalls
+                </span>
               </div>
-              <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
-              <p className="text-sm text-green-500/70">No open recalls</p>
-            </div>
+              {!recalls ? (
+                <p className="text-2xl lg:text-3xl font-bold text-white">—</p>
+              ) : openRecalls.length > 0 ? (
+                <>
+                  <p className="text-2xl lg:text-3xl font-bold text-red-400">{openRecalls.length} Open</p>
+                  <p className="text-sm text-red-500/70">Tap for details</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl lg:text-3xl font-bold text-green-400">Clear</p>
+                  <p className="text-sm text-green-500/70">No open recalls</p>
+                </>
+              )}
+            </button>
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
               <div className="flex items-center gap-2 mb-2">
@@ -686,6 +726,54 @@ export default function Dashboard() {
                   {completeReminder.isPending || logMaintenance.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {recallsOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setRecallsOpen(false)}>
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b shrink-0">
+              <h2 className="text-lg font-semibold">NHTSA Recalls</h2>
+              <button onClick={() => setRecallsOpen(false)} className="p-1 text-gray-500 hover:text-gray-700">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {(recalls ?? []).length === 0 && <p className="text-toyota-gray text-center py-6">No recall records on file.</p>}
+              {(recalls ?? []).map((r) => (
+                <div key={r.id} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium text-gray-900">{r.component}</p>
+                      <p className="text-xs text-gray-500">
+                        NHTSA {r.nhtsa_campaign}
+                        {r.report_receipt_date && ` · ${formatDate(r.report_receipt_date)}`}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full border ${
+                        r.status === 'open' ? 'text-red-700 bg-red-50 border-red-200' : 'text-green-700 bg-green-50 border-green-200'
+                      }`}
+                    >
+                      {r.status === 'open' ? 'Open' : 'Remedied'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">{r.summary}</p>
+                  {r.remedy && <p className="text-sm text-gray-500">{r.remedy}</p>}
+                  <button
+                    onClick={() => updateRecallStatus.mutate({ id: r.id, status: r.status === 'open' ? 'remedied' : 'open' })}
+                    disabled={updateRecallStatus.isPending}
+                    className="text-sm font-medium text-toyota-red hover:text-red-700 disabled:opacity-50"
+                  >
+                    {r.status === 'open' ? 'Mark as remedied' : 'Mark as open'}
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
