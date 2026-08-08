@@ -61,10 +61,21 @@ export interface UploadProgress {
 
 let workerConfigured = false;
 
+// The default `pdfjs-dist` build targets evergreen desktop engines and uses
+// very recent JS (e.g. Promise.withResolvers) with no fallback — it throws
+// "undefined is not a function" on any browser missing that feature. Older
+// iOS/iPadOS Safari versions lag behind desktop Safari here, so PDFs picked
+// on an iPhone can fail an upload that works fine on desktop. `legacy/build`
+// ships the same API with polyfills for those gaps (see pdfjs-dist's own
+// README: "For usage with older browsers/environments ... see the `legacy/`
+// folder"), so import from there instead.
 async function loadPdfJs() {
-  const pdfjsLib = await import('pdfjs-dist');
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
   if (!workerConfigured) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.mjs', import.meta.url).href;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/legacy/build/pdf.worker.mjs',
+      import.meta.url
+    ).href;
     workerConfigured = true;
   }
   return pdfjsLib;
