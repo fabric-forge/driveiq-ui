@@ -15,6 +15,20 @@
 
 import { api } from './api';
 import type { IngestChunk } from '@/types';
+import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+/** Renders any thrown value into text, including the JS-engine-native
+ * messages (e.g. Safari's "undefined is not a function (near '...')")
+ * that plain `String(err)` or `err.message` would otherwise swallow if
+ * `err` isn't an Error instance. */
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message || err.name;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
 
 const CHUNK_SIZE = 500;
 const CHUNK_OVERLAP = 50;
@@ -132,9 +146,14 @@ export async function ingestPdf(
   documentName: string,
   onProgress: (p: UploadProgress) => void
 ): Promise<void> {
-  const pdfjsLib = await loadPdfJs();
-  const data = await file.arrayBuffer();
-  const pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+  let pdfDoc: PDFDocumentProxy;
+  try {
+    const pdfjsLib = await loadPdfJs();
+    const data = await file.arrayBuffer();
+    pdfDoc = await pdfjsLib.getDocument({ data }).promise;
+  } catch (err) {
+    throw new Error(`[loading] ${describeError(err)}`, { cause: err });
+  }
 
   try {
     const pageCount = pdfDoc.numPages;
@@ -143,13 +162,17 @@ export async function ingestPdf(
     onProgress({ phase: 'parsing', current: 0, total: pageCount });
     const chunks: IngestChunk[] = [];
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
-      if (pageText.trim()) {
-        for (const content of chunkText(pageText)) {
-          chunks.push({ content, chunk_index: 0, page_number: pageNum });
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
+        if (pageText.trim()) {
+          for (const content of chunkText(pageText)) {
+            chunks.push({ content, chunk_index: 0, page_number: pageNum });
+          }
         }
+      } catch (err) {
+        throw new Error(`[parsing p${pageNum}/${pageCount}] ${describeError(err)}`, { cause: err });
       }
       onProgress({ phase: 'parsing', current: pageNum, total: pageCount });
     }
@@ -158,37 +181,45 @@ export async function ingestPdf(
     onProgress({ phase: 'indexing-text', current: 0, total: chunks.length });
     for (let i = 0; i < chunks.length; i += BATCH) {
       const batch = chunks.slice(i, i + BATCH);
-      await api.aiana.ingestChunks(documentName, batch);
+      try {
+        await api.aiana.ingestChunks(documentName, batch);
+      } catch (err) {
+        throw new Error(`[indexing-text ${i}/${chunks.length}] ${describeError(err)}`, { cause: err });
+      }
       onProgress({ phase: 'indexing-text', current: Math.min(i + BATCH, chunks.length), total: chunks.length });
     }
 
     // Phase 2: render + upload page images. Only reached if phase 1 succeeded.
     onProgress({ phase: 'rendering-images', current: 0, total: pageCount });
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum);
-      const baseViewport = page.getViewport({ scale: 1 });
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const baseViewport = page.getViewport({ scale: 1 });
 
-      const fullScale = 1200 / baseViewport.width;
-      const fullViewport = page.getViewport({ scale: fullScale });
-      const fullCanvas = document.createElement('canvas');
-      fullCanvas.width = fullViewport.width;
-      fullCanvas.height = fullViewport.height;
-      await page.render({ canvas: fullCanvas, viewport: fullViewport }).promise;
-      const fullBytes = await canvasToPngBuffer(fullCanvas);
-      await putImageWithRetry(documentName, pageNum, 'full', fullBytes);
+        const fullScale = 1200 / baseViewport.width;
+        const fullViewport = page.getViewport({ scale: fullScale });
+        const fullCanvas = document.createElement('canvas');
+        fullCanvas.width = fullViewport.width;
+        fullCanvas.height = fullViewport.height;
+        await page.render({ canvas: fullCanvas, viewport: fullViewport }).promise;
+        const fullBytes = await canvasToPngBuffer(fullCanvas);
+        await putImageWithRetry(documentName, pageNum, 'full', fullBytes);
 
-      // Downscale the already-rendered full canvas instead of a second
-      // pdf.js render call — cheap with a real <canvas> available, unlike
-      // the Node scripts which re-render at each size via getScreenshot().
-      const thumbScale = 300 / fullCanvas.width;
-      const thumbCanvas = document.createElement('canvas');
-      thumbCanvas.width = Math.round(fullCanvas.width * thumbScale);
-      thumbCanvas.height = Math.round(fullCanvas.height * thumbScale);
-      const thumbCtx = thumbCanvas.getContext('2d');
-      if (!thumbCtx) throw new Error('Could not acquire 2D canvas context');
-      thumbCtx.drawImage(fullCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
-      const thumbBytes = await canvasToPngBuffer(thumbCanvas);
-      await putImageWithRetry(documentName, pageNum, 'thumbnail', thumbBytes);
+        // Downscale the already-rendered full canvas instead of a second
+        // pdf.js render call — cheap with a real <canvas> available, unlike
+        // the Node scripts which re-render at each size via getScreenshot().
+        const thumbScale = 300 / fullCanvas.width;
+        const thumbCanvas = document.createElement('canvas');
+        thumbCanvas.width = Math.round(fullCanvas.width * thumbScale);
+        thumbCanvas.height = Math.round(fullCanvas.height * thumbScale);
+        const thumbCtx = thumbCanvas.getContext('2d');
+        if (!thumbCtx) throw new Error('Could not acquire 2D canvas context');
+        thumbCtx.drawImage(fullCanvas, 0, 0, thumbCanvas.width, thumbCanvas.height);
+        const thumbBytes = await canvasToPngBuffer(thumbCanvas);
+        await putImageWithRetry(documentName, pageNum, 'thumbnail', thumbBytes);
+      } catch (err) {
+        throw new Error(`[rendering-images p${pageNum}/${pageCount}] ${describeError(err)}`, { cause: err });
+      }
 
       onProgress({ phase: 'rendering-images', current: pageNum, total: pageCount });
     }
