@@ -78,6 +78,10 @@ function ReminderCard({
                 {reminder.due_date && reminder.due_mileage && ' • '}
                 {reminder.due_mileage && `${reminder.due_mileage.toLocaleString()} mi`}
               </p>
+              {/* Short reference (e.g. "DR-2026-0042") to quote back to Aiana
+                  or a shop instead of the title — see reference_number on
+                  the Reminder type. */}
+              <p className="text-xs text-gray-400 font-mono mt-0.5">{reminder.reference_number}</p>
             </div>
           </div>
           {isExpanded ? (

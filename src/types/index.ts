@@ -122,6 +122,10 @@ export interface Reminder {
   category: 'appointment' | null;
   created_at: string;
   updated_at: string | null;
+  // Short human-friendly reference (e.g. "DR-2026-0042") the backend derives
+  // from id + created_at — see driveiq-cloud/src/worker/core/reminders.ts.
+  // Not stored; always present on API responses, nothing to backfill.
+  reference_number: string;
 }
 
 // NHTSA recall records — see driveiq-cloud/migrations/0005_recalls.sql.
