@@ -80,6 +80,9 @@ export interface AskResponse {
   // True when Aiana called the create_reminder tool during this turn — the
   // caller should invalidate the ['reminders'] query so What's Next refreshes.
   reminder_created?: boolean;
+  // True when Aiana called the update_reminder tool during this turn — same
+  // invalidation as reminder_created, just for an edit instead of a new one.
+  reminder_updated?: boolean;
 }
 
 // Wire shapes for POST /api/search/ingest — used by the Aiana document
