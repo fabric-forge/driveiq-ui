@@ -8,7 +8,7 @@ import {
 import { api } from '@/lib/api'
 import { formatDate, daysSince, todayISO } from '@/lib/date'
 import { CATEGORY_META } from '@/lib/maintenanceCategories'
-import { computeUpcoming, type UpcomingItem } from '@/lib/maintenanceSchedule'
+import { computeUpcoming, MAINTENANCE_SCHEDULE, type UpcomingItem } from '@/lib/maintenanceSchedule'
 import { forecastAianaQuery, forecastSpecPreviewQuery, reminderAianaQuery, stripMarkdown } from '@/lib/aianaQueries'
 import type { Reminder, MaintenanceRecord, VehicleSpec } from '@/types'
 
@@ -30,6 +30,8 @@ const URGENCY_STYLE: Record<UpcomingItem['status'], { border: string; badge: str
   due_soon: { border: 'border-amber-500', badge: 'text-amber-600 bg-amber-50 border-amber-200' },
   ok: { border: 'border-emerald-500', badge: 'text-emerald-600 bg-emerald-50 border-emerald-200' },
 }
+
+const MAINTENANCE_TYPE_NAME = new Map(MAINTENANCE_SCHEDULE.map((item) => [item.type, item.name]))
 
 function Tag({ label, className }: { label: string; className: string }) {
   return (
@@ -95,6 +97,14 @@ function ReminderCard({
       {isExpanded && (
         <div className="px-4 pb-4 pt-4 border-t bg-gray-50">
           {reminder.description && <p className="text-sm text-gray-600 mb-3">{reminder.description}</p>}
+          {/* Explains why there's no separate Forecast card for this
+              service — it's covered by this reminder instead, per
+              coveredMaintenanceTypes filtering `upcoming` below. */}
+          {reminder.maintenance_type && (
+            <p className="text-xs text-gray-500 mb-3">
+              Covers the forecasted {MAINTENANCE_TYPE_NAME.get(reminder.maintenance_type) ?? reminder.maintenance_type} service
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <button
               onClick={onLogService}
@@ -388,10 +398,21 @@ export default function Dashboard() {
     },
   })
 
+  // Types with an active reminder/appointment already covering them (see
+  // Reminder['maintenance_type']) — their Forecast card is redundant once
+  // that reminder exists, so it's filtered out below rather than shown
+  // alongside the scheduled one.
+  const coveredMaintenanceTypes = useMemo(
+    () => new Set((reminders ?? []).map((r) => r.maintenance_type).filter((t): t is string => t !== null)),
+    [reminders]
+  )
+
   const upcoming = useMemo(() => {
     if (!records || !vehicle?.current_mileage) return []
-    return computeUpcoming(records, vehicle.current_mileage).slice(0, 6)
-  }, [records, vehicle?.current_mileage])
+    return computeUpcoming(records, vehicle.current_mileage)
+      .filter((item) => !coveredMaintenanceTypes.has(item.type))
+      .slice(0, 6)
+  }, [records, vehicle?.current_mileage, coveredMaintenanceTypes])
 
   const lastRecordByType = useMemo(() => {
     const map = new Map<string, MaintenanceRecord>()
