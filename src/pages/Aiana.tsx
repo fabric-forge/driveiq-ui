@@ -35,7 +35,7 @@ export default function Aiana() {
     try {
       const res = await api.aiana.ask(query)
       setMessages((prev) => [...prev, { role: 'assistant', content: res.answer, sources: res.sources }])
-      if (res.reminder_created) {
+      if (res.reminder_created || res.reminder_updated) {
         queryClient.invalidateQueries({ queryKey: ['reminders'] })
       }
     } catch (err) {
