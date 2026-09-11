@@ -34,6 +34,9 @@ const TYPE_TO_CATEGORY: Record<string, Category> = {
   drive_belt: 'other',
   battery: 'electrical',
   wiper_blades: 'other',
+  front_differential: 'fluids',
+  rear_differential: 'fluids',
+  transfer_case: 'fluids',
 }
 
 export function categorize(maintenanceType: string): Category {

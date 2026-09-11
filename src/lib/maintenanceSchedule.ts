@@ -34,6 +34,15 @@ export const MAINTENANCE_SCHEDULE: ScheduleItem[] = [
   { type: 'brake_pads_rear', name: 'Rear Brake Pads', intervalMiles: 50000, intervalMonths: 60, category: 'brakes', priority: 'high' },
   { type: 'battery', name: 'Battery', intervalMiles: 50000, intervalMonths: 48, category: 'electrical', priority: 'medium' },
   { type: 'wiper_blades', name: 'Wiper Blades', intervalMiles: 15000, intervalMonths: 12, category: 'other', priority: 'low' },
+  // Not part of Toyota's normal-condition owner's manual interval (front/rear
+  // diff and transfer case are "inspect only" there) — these three follow
+  // Toyota's severe-duty schedule instead, per the owner's dealership
+  // recommending it regardless of what the normal-condition documentation
+  // says. 30k mi is Toyota's standard severe-duty interval for these three
+  // on 4WD trucks/SUVs (4Runner, Tacoma, Tundra).
+  { type: 'front_differential', name: 'Front Differential Fluid', intervalMiles: 30000, intervalMonths: 36, category: 'fluids', priority: 'medium' },
+  { type: 'rear_differential', name: 'Rear Differential Fluid', intervalMiles: 30000, intervalMonths: 36, category: 'fluids', priority: 'medium' },
+  { type: 'transfer_case', name: 'Transfer Case Fluid', intervalMiles: 30000, intervalMonths: 36, category: 'fluids', priority: 'medium' },
 ]
 
 export interface UpcomingItem extends ScheduleItem {
@@ -84,4 +93,20 @@ export function computeUpcoming(
       dueDate: estimateDueDate(last?.date_performed ?? null, item.intervalMonths),
     }
   }).sort((a, b) => a.milesRemaining - b.milesRemaining)
+}
+
+// Mirrors driveiq-cloud/src/worker/core/reminders.ts's parseMaintenanceTypes.
+// Reminder['maintenance_type'] holds the set of these `type` slugs a
+// reminder covers (a ticket can span more than one service), JSON-encoded
+// like maintenance_records' other multi-value columns. A plain string is
+// also accepted, for rows written before multi-type support existed.
+export function parseMaintenanceTypes(raw: string | null): string[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.filter((t): t is string => typeof t === 'string')
+  } catch {
+    // Not JSON — an old single-type value written before multi-type support.
+  }
+  return [raw]
 }
