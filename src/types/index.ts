@@ -126,11 +126,14 @@ export interface Reminder {
   // from id + created_at — see driveiq-cloud/src/worker/core/reminders.ts.
   // Not stored; always present on API responses, nothing to backfill.
   reference_number: string;
-  // Matches one of MAINTENANCE_SCHEDULE's `type` slugs (@/lib/maintenanceSchedule)
-  // when this reminder/appointment already covers that forecasted service —
-  // null otherwise. Set via Aiana's create_reminder/update_reminder tools, or
-  // by hand via PATCH. Dashboard uses this to hide the now-redundant Forecast
-  // card for that type instead of showing both.
+  // JSON-encoded array of MAINTENANCE_SCHEDULE `type` slugs
+  // (@/lib/maintenanceSchedule) this reminder/appointment already covers —
+  // one ticket can span several services (e.g. front/rear differential +
+  // transfer case in one visit). Null when it covers none. Use
+  // parseMaintenanceTypes() rather than reading this directly — it also
+  // accepts a bare (non-JSON) single type from before multi-type support.
+  // Set via Aiana's create_reminder/update_reminder tools, or by hand via
+  // PATCH. Dashboard uses it to hide the now-redundant Forecast card(s).
   maintenance_type: string | null;
 }
 
