@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/banner.svg" alt="driveiq-ui: DriveIQ frontend, served at driveiq.ry-ops.dev" width="100%"></p>
+
 # driveiq-ui
 
 DriveIQ frontend — React + Vite + Tailwind, served at `driveiq.ry-ops.dev` via
@@ -28,3 +30,8 @@ Deploys via GitHub Actions on push to `main`
 Cloudflare Pages (`cloudflare/pages-action`). Requires a
 `CLOUDFLARE_API_TOKEN` repo secret and a `driveiq-ui` Pages project to exist
 in the Cloudflare account.
+
+<!-- org-footer -->
+---
+
+<p align="center"><sub>Part of <a href="https://github.com/fabric-forge">fabric-forge</a> · built by <a href="https://github.com/ry-ops">ry-ops</a></sub></p>
