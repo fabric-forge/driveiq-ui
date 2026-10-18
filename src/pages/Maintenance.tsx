@@ -26,7 +26,7 @@ function UpcomingCard({ item }: { item: UpcomingItem }) {
   }[item.status]
 
   return (
-    <div className="flex-shrink-0 w-44 sm:w-auto bg-white border border-gray-200 rounded-lg p-3 flex flex-col gap-2">
+    <div className="shrink-0 w-44 sm:w-auto bg-white border border-gray-200 rounded-lg p-3 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <div className={`p-1.5 rounded-md ${meta.color}`}>
           <Icon className="h-4 w-4" />
@@ -69,7 +69,7 @@ export default function Maintenance() {
   return (
     <div className="space-y-6 pb-8">
       {/* Hero header, matching the Home page's dark gradient treatment */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-6 py-6">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-gray-900 via-gray-800 to-gray-900 px-6 py-6">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-toyota-red blur-3xl" />
           <div className="absolute -left-16 -bottom-16 h-48 w-48 rounded-full bg-blue-500 blur-3xl" />

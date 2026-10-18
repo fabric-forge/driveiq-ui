@@ -71,7 +71,7 @@ function ReminderCard({
             </div>
             <div className="min-w-0">
               <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                <h3 className="font-semibold text-gray-900 break-words">{reminder.title}</h3>
+                <h3 className="font-semibold text-gray-900 wrap-break-word">{reminder.title}</h3>
                 {isAppointment ? (
                   <Tag label="Appointment" className="bg-blue-600 text-white" />
                 ) : (
@@ -198,7 +198,7 @@ function ForecastCard({
             </div>
             <div className="min-w-0">
               <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                <h3 className="font-semibold text-gray-900 break-words">{item.name}</h3>
+                <h3 className="font-semibold text-gray-900 wrap-break-word">{item.name}</h3>
                 <Tag label="Forecast" className="bg-gray-900 text-white" />
               </div>
               <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 border ${badge}`}>
@@ -446,7 +446,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Vehicle block: title, mileage update, and all vehicle stats together */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-toyota-red blur-3xl" />
           <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-blue-500 blur-3xl" />
@@ -488,7 +488,7 @@ export default function Dashboard() {
                   value={mileageInput}
                   onChange={(e) => setMileageInput(e.target.value)}
                   placeholder="Update mileage"
-                  className="w-40 px-3 py-2 text-sm text-gray-900 bg-white/90 backdrop-blur border-0 rounded-lg focus:ring-2 focus:ring-toyota-red"
+                  className="w-40 px-3 py-2 text-sm text-gray-900 bg-white/90 backdrop-blur-sm border-0 rounded-lg focus:ring-2 focus:ring-toyota-red"
                 />
                 <button
                   type="submit"
@@ -509,7 +509,7 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               onClick={() => toggleBlur('odometer')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              className="bg-white/5 backdrop-blur-xs rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
               title="Click to blur/unblur"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -528,7 +528,7 @@ export default function Dashboard() {
 
             <div
               onClick={() => toggleBlur('value')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              className="bg-white/5 backdrop-blur-xs rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
               title="Click to blur/unblur"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -548,7 +548,7 @@ export default function Dashboard() {
             <button
               onClick={() => recalls && setRecallsOpen(true)}
               disabled={!recalls}
-              className={`text-left rounded-xl p-4 border backdrop-blur-sm transition-colors ${
+              className={`text-left rounded-xl p-4 border backdrop-blur-xs transition-colors ${
                 !recalls || !titleChecks
                   ? 'bg-white/5 border-white/10'
                   : openRecalls.length > 0 || titleFlagged
@@ -599,7 +599,7 @@ export default function Dashboard() {
               </p>
             </button>
 
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-xs rounded-xl p-4 border border-white/10">
               <div className="flex items-center gap-2 mb-2">
                 <Settings2 className="h-5 w-5 text-cyan-400" />
                 <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Engine</span>
@@ -608,7 +608,7 @@ export default function Dashboard() {
               <p className="text-sm text-gray-500">{vehicle.drivetrain ?? ''}</p>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-xs rounded-xl p-4 border border-white/10">
               <div className="flex items-center gap-2 mb-2">
                 <Wrench className="h-5 w-5 text-amber-400" />
                 <span className="text-xs font-medium uppercase tracking-wider text-gray-400">Transmission</span>
@@ -618,7 +618,7 @@ export default function Dashboard() {
 
             <div
               onClick={() => toggleBlur('vin')}
-              className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+              className="bg-white/5 backdrop-blur-xs rounded-xl p-4 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
               title="Click to blur/unblur"
             >
               <div className="flex items-center gap-2 mb-2">
