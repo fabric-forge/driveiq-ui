@@ -33,6 +33,9 @@ jobs:
 
       # cloudflare/pages-action was retired; every deploy since 2026-09-11 failed.
       - name: Deploy to Cloudflare Pages
+        env:
+          # wrangler-action installs wrangler into this project; same peer conflict as npm ci.
+          npm_config_legacy_peer_deps: 'true'
         uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
