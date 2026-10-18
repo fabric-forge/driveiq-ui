@@ -226,6 +226,7 @@ export async function ingestPdf(
 
     onProgress({ phase: 'done', current: pageCount, total: pageCount });
   } finally {
-    await pdfDoc.destroy();
+    // pdfjs-dist 6 moved destroy() from the document to its loading task.
+    await pdfDoc.loadingTask.destroy();
   }
 }
