@@ -78,7 +78,7 @@ export default function Aiana() {
   return (
     <>
     <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[800px] bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-900 to-gray-800">
+      <div className="flex items-center justify-between gap-2 px-6 py-4 border-b border-gray-100 bg-linear-to-r from-gray-900 to-gray-800">
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles className="h-5 w-5 text-toyota-red shrink-0" />
           <div className="min-w-0">
@@ -136,7 +136,7 @@ export default function Aiana() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask Aiana about your vehicle…"
-          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-toyota-red"
+          className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-hidden focus:ring-2 focus:ring-toyota-red"
         />
         <button
           type="submit"

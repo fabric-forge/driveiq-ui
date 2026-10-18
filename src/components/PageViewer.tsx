@@ -21,7 +21,7 @@ export default function PageViewer({ sources }: PageViewerProps) {
             onClick={() => setSelectedPage(source)}
             className="group relative bg-white border border-gray-200 rounded-lg overflow-hidden hover:border-toyota-red hover:shadow-md transition-all"
           >
-            <div className="aspect-[3/4] bg-gray-100">
+            <div className="aspect-3/4 bg-gray-100">
               <img
                 src={source.thumbnail_url}
                 alt={`${source.document} page ${source.page}`}
